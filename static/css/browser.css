@@ -1,0 +1,123 @@
+#browser {
+  width:90%;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 80px;
+}
+.browser{
+  font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+}
+#browser_info{
+  min-height: 200px;
+}
+
+#browser_header{
+  border-color: #f2f2f2;
+  border-width: 10px;
+  border-style: solid;
+  border-left:none;
+  border-top:none;
+  border-right:none;
+}
+
+.browser-metrics{
+  background-color: rgba(243, 230, 255,0.17);
+  display:inline;
+  float:right;
+  width: 28%;
+  min-height: 200px;
+  border-left: solid;
+  border-color: #f2f2f2;
+}
+
+.browser-info{
+  display: inline-block;
+  font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+  background-color: rgba(243, 230, 255,0.17);
+  width: 70%;
+}
+
+
+
+
+.browser-header-tab {
+  table-layout: auto;
+  margin-top: 20px;
+  border-collapse: collapse;
+  border-color: #f2f2f2;
+  text-align:left;
+  word-wrap:break-word;
+}
+.browser-header-tab tr:first-child th{
+  border: none;
+}
+.browser-header-tab tr td {
+  border-top: none !important;
+  font-size: 125%;
+}
+.browser-header-tab tr th {
+  font-size: 230%;
+}
+
+
+.browser-details-tab {
+  table-layout: auto;
+  border-top:solid;
+  border-color: #f2f2f2;
+  text-align:left;
+  word-wrap:break-word;
+  width: 100%;
+  border: none !important;
+}
+.browser-details-tab tr td {
+  font-size: 120%;
+}
+.browser-details-tab tr th {
+  font-size: 140%;
+}
+.browser-details-tab td.resource-info {
+  color: #9931FC;
+  font-size: 100%;
+}
+
+.browser-metrics-tab {
+  margin-left:10px;
+  table-layout: auto;
+  border-collapse: collapse;
+  text-align:left;
+  word-wrap:break-word;
+  border: none !important;
+}
+.browser-metrics-tab tr td {
+  font-size: 120%;
+}
+.browser-metrics-tab tr th {
+  font-size: 160%;
+}
+
+
+/*modify search css*/
+#search_results{
+  width:100%;
+}
+
+
+/*customize dynamic elems added*/
+.imp-value{
+  color: #336699;
+  font-size: 145%;
+}
+
+.metric-entry{
+  font-size: 105%;
+}
+
+/*
+.header-title{
+  font-size: 140%;
+}
+
+.metrics-title{
+  font-size: 145%;
+}
+*/
