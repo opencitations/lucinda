@@ -119,13 +119,13 @@ var browser_conf = {
           ],
           "details": [
               {"tag":"td", "classes":["20px"]},
-              {"fields": ["orcid"], "tag":"td"}
+              {"fields": ["FREE-TEXT","orcid"], "values": ["Author ORCID: ",""], "tag":"td"}
           ],
           "metrics": [
               {"tag":"td", "classes":["5px"]},
               {"fields": ["FREE-TEXT"], "values": ["Metrics"], "classes": ["metrics-title"], "tag":"th"},
               {"tag":"td", "classes":["25px"]},
-              {"fields": ["FREE-TEXT","num_docs"], "values": ["Number of documents ",""], "classes": ["metric-entry","imp-value"],  "tag":"td"},
+              {"fields": ["FREE-TEXT","num_docs","FREE-TEXT"], "values": ["Author of ",""," documents"], "classes": ["metric-entry","imp-value"],  "tag":"td"},
               {"tag":"td", "classes":["10px"]},
               {"fields": ["FREE-TEXT","in_cits","FREE-TEXT"], "values": ["Cited by ",""," documents"], "classes": ["metric-entry","imp-value","metric-entry"],  "tag":"td"}
           ]

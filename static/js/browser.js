@@ -383,6 +383,9 @@ var b_htmldom = (function () {
 					}else {
 						if (key == "FREE-TEXT") {
 							elem_dom.innerHTML = content_entry.values[i];
+						}else {
+							//empty value
+							elem_dom.innerHTML = "NONE";
 						}
 					}
 
