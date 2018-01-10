@@ -38,3 +38,5 @@ An entry example and its representation will look like this:
   "tag":"td"
 }
 ```
+<img src="images/example-entry.png" style="display: inline-block; height: 80px; width: 130px;"/>
+
