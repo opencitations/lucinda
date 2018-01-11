@@ -113,24 +113,17 @@ var browser = (function () {
 				var new_elem_obj = elem_obj;
 				var uri = null;
 				if (links.hasOwnProperty(field)){
-					var link_obj = links[field];
+						var link_obj = links[field];
+						if (link_obj.hasOwnProperty("field")) {
+							if ((link_obj.field != null) && (link_obj.field != "")) {
+								// I have field to link to
 
-						if (link_obj.hasOwnProperty("active")) {
-							if (link_obj.active == true) {
-								// the link is active
-
-								if (link_obj.hasOwnProperty("field")) {
-									if ((link_obj.field != null) && (link_obj.field != "")) {
-										// I have field to link to
-
-										if (elem_obj.hasOwnProperty(link_obj.field)) {
-											uri = elem_obj[link_obj.field].value;
-											if (link_obj.hasOwnProperty("prefix")) {
-												uri = String(link_obj.prefix) + uri;
-											}
-											new_elem_obj[field]["uri"] = uri;
-										}
+								if (elem_obj.hasOwnProperty(link_obj.field)) {
+									uri = elem_obj[link_obj.field].value;
+									if (link_obj.hasOwnProperty("prefix")) {
+										uri = String(link_obj.prefix) + uri;
 									}
+									new_elem_obj[field]["uri"] = uri;
 								}
 							}
 						}

@@ -46,11 +46,11 @@ var browser_conf = {
           "} GROUP BY ?my_iri ?id_lit ?type ?short_type ?label ?title ?subtitle ?year ?author_iri ?author"
         ],
         "links": {
-          "author": {"field":"author_iri","prefix":"","active": true},
-          "short_type": {"field":"type","prefix":"","active": true},
-          "id_lit": {"field":"id_lit","prefix":"http://dx.doi.org/","active": true}
+          "author": {"field":"author_iri","prefix":null},
+          "short_type": {"field":"type","prefix":null},
+          "id_lit": {"field":"id_lit","prefix":"http://dx.doi.org/"}
         },
-        "group_by": {"keys":["label"], "concats":["author","short_type"], "active": true},
+        "group_by": {"keys":["label"], "concats":["author","short_type"]},
 
         "text_mapping": {
             "short_type":[
@@ -61,25 +61,25 @@ var browser_conf = {
 
         "contents": {
           "header": [
-              {"tag":"td", "classes":["40px"]},
-              {"fields": ["title"], "tag":"th"},
-              {"fields": ["subtitle"], "tag":"td"},
-              {"tag":"td", "classes":["10px"]},
-              {"fields": ["author"], "tag":"td", "concat_style":{"author": "inline"}}
+              {"classes":["40px"]},
+              {"fields": ["title"], "classes":["header-title"]},
+              {"fields": ["subtitle"], "classes":["sub-header-title"]},
+              {"classes":["10px"]},
+              {"fields": ["author"], "concat_style":{"author": "inline"}}
           ],
           "details": [
-            {"tag":"td", "classes":["20px"]},
-            {"tag":"td", "fields": ["FREE-TEXT","id_lit"], "values":["DOI : ",""] },
-            {"tag":"td", "fields": ["FREE-TEXT","year"], "values":["Publication year : ",""] },
-            {"tag":"td", "fields": ["FREE-TEXT","short_type"], "values":["Document type : ",""], "concat_style":{"short_type": "last"} }
+            {"classes":["20px"]},
+            {"fields": ["FREE-TEXT","id_lit"], "values":["DOI : ", null] },
+            {"fields": ["FREE-TEXT","year"], "values":["Publication year : ", null] },
+            {"fields": ["FREE-TEXT","short_type"], "values":["Document type : ",null], "concat_style":{"short_type": "last"} }
           ],
           "metrics": [
-            {"tag":"td", "classes":["30px"]},
-            {"fields": ["FREE-TEXT"], "values": ["Metrics"], "tag":"th"},
-            {"tag":"td", "classes":["15px"]},
-            {"fields": ["FREE-TEXT","in_cits","FREE-TEXT"], "values": ["Cited by ",""," documents"], "classes": ["metric-entry","imp-value","metric-entry"],  "tag":"td"},
-            {"tag":"td", "classes":["10px"]},
-            {"fields": ["FREE-TEXT","out_cits","FREE-TEXT"], "values": ["Cites ",""," documents"], "classes": ["metric-entry","imp-value","metric-entry"],  "tag":"td"},
+            {"classes":["30px"]},
+            {"fields": ["FREE-TEXT"], "values": ["Metrics"], "classes": ["metrics-title"]},
+            {"classes":["15px"]},
+            {"fields": ["FREE-TEXT","in_cits","FREE-TEXT"], "values": ["Cited by ",null," documents"], "classes": ["metric-entry","imp-value","metric-entry"]},
+            {"classes":["10px"]},
+            {"fields": ["FREE-TEXT","out_cits","FREE-TEXT"], "values": ["Cites ",null," documents"], "classes": ["metric-entry","imp-value","metric-entry"]},
           ]
         }
   },
@@ -106,28 +106,28 @@ var browser_conf = {
            "} GROUP BY ?label ?orcid ?author_iri ?author "
         ],
         "links": {
-          "author": {"field":"author_iri","prefix":"","active": true},
-          "title": {"field":"doc","prefix":"","active": true},
-          "orcid": {"field":"orcid","prefix":"https://orcid.org/","active": true}
+          "author": {"field":"author_iri"},
+          "title": {"field":"doc"},
+          "orcid": {"field":"orcid","prefix":"https://orcid.org/"}
         },
-        "group_by": {"keys":["label"], "concats":["doc","title","year"], "active": true},
+        "group_by": {"keys":["label"], "concats":["doc","title","year"]},
 
         "contents": {
           "header": [
-              {"tag":"td", "classes":["40px"]},
-              {"fields": ["author"], "classes":["header-title"], "tag":"th"}
+              {"classes":["40px"]},
+              {"fields": ["author"], "classes":["header-title"]}
           ],
           "details": [
-              {"tag":"td", "classes":["20px"]},
-              {"fields": ["FREE-TEXT","orcid"], "values": ["Author ORCID: ",""], "tag":"td"}
+              {"classes":["20px"]},
+              {"fields": ["FREE-TEXT","orcid"], "values": ["Author ORCID: ",null]}
           ],
           "metrics": [
-              {"tag":"td", "classes":["5px"]},
-              {"fields": ["FREE-TEXT"], "values": ["Metrics"], "classes": ["metrics-title"], "tag":"th"},
-              {"tag":"td", "classes":["25px"]},
-              {"fields": ["FREE-TEXT","num_docs","FREE-TEXT"], "values": ["Author of ",""," documents"], "classes": ["metric-entry","imp-value"],  "tag":"td"},
-              {"tag":"td", "classes":["10px"]},
-              {"fields": ["FREE-TEXT","in_cits","FREE-TEXT"], "values": ["Cited by ",""," documents"], "classes": ["metric-entry","imp-value","metric-entry"],  "tag":"td"}
+              {"classes":["5px"]},
+              {"fields": ["FREE-TEXT"], "values": ["Metrics"], "classes": ["metrics-title"]},
+              {"classes":["25px"]},
+              {"fields": ["FREE-TEXT","num_docs","FREE-TEXT"], "values": ["Author of ",null," documents"], "classes": ["metric-entry","imp-value"]},
+              {"classes":["10px"]},
+              {"fields": ["FREE-TEXT","in_cits","FREE-TEXT"], "values": ["Cited by ",null," documents"], "classes": ["metric-entry","imp-value","metric-entry"]}
           ]
         }
   }

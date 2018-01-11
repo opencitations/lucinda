@@ -1,6 +1,6 @@
 The browser layout contains 3 containers: header, details, metrics. 
 You can specify the interface contents inside the configuration file **browser-conf.js**. For each different category: document and author, we have the following code scheme:
-```js
+js
 "document": {
         ...
         "contents": {
@@ -19,7 +19,6 @@ You can specify the interface contents inside the configuration file **browser-c
         }
   }
 
-```
 
 Inside each different container you can add a number of entries, therefore each container key will have an array of values. 
 The interface will list the values vertically following the order of the entries. Each entry is a JSON object {} and can contain this key-value pares:
@@ -38,5 +37,5 @@ An entry example and its representation will look like this:
   "tag":"td"
 }
 ```
-<img src="images/example-entry.png" style="display: inline-block; height: 110px; width: 130px;"/>
+<img src="images/example-entry.png" style="display: inline-block; height: 90px; width: 250px;"/>
 
