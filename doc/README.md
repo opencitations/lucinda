@@ -37,5 +37,5 @@ An entry example and its representation will look like this:
   "tag":"td"
 }
 ```
-<img src="images/example-entry.png" style="display: inline-block; height: 90px; width: 250px;"/>
+<img src="images/example-entry.png" height = "130" width= "320"/>
 
