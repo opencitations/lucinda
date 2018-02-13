@@ -7,12 +7,12 @@ var browser = (function () {
 		/*it's a document or an author*/
 		function _get_category(resource_text) {
 
-			var re = new RegExp(browser_conf_json["document"]["rule"]);
-			if (resource_text.match(re)) {return "document";}
-
-			re = new RegExp(browser_conf_json["author"]["rule"]);
-			if (resource_text.match(re)) { return "author";}
-
+			for (var key_cat in browser_conf_json.categories) {
+				if (browser_conf_json.categories.hasOwnProperty(key_cat)) {
+					var re = new RegExp(browser_conf_json.categories[key_cat]["rule"]);
+					if (resource_text.match(re)) {return key_cat;}
+				}
+			}
 			return -1;
 		}
 
@@ -39,26 +39,28 @@ var browser = (function () {
 		call the sparql endpoint and do the query*/
 		function do_sparql_query(resource_iri){
 
-			//console.log(resource_iri);
+
+			console.log(resource_iri);
 			//var header_container = document.getElementById("browser_header");
 
 			if (resource_iri != "") {
 
-				resource = resource_iri;
+				resource = "https://w3id.org/oc"+"/corpus/"+resource_iri;
 
 				//initialize and get the browser_config_json
 				browser_conf_json = browser_conf;
 
-				var category = _get_category(resource_iri);
+				var category = _get_category(resource);
 
 				//build the sparql query in turtle format
-				var sparql_query = _build_turtle_prefixes() + _build_turtle_query(browser_conf_json[category].query);
+				var sparql_query = _build_turtle_prefixes() + _build_turtle_query(browser_conf_json.categories[category].query);
 				//since its a resource iri we put it between < >
 				var global_r = new RegExp("<VAR>", "g");
-				sparql_query = sparql_query.replace(global_r, "<"+resource_iri+">");
+				sparql_query = sparql_query.replace(global_r, "<"+resource+">");
+				console.log(sparql_query);
 
 				//use this url to contact the sparql_endpoint triple store
-				var query_contact_tp = "http://localhost:8080/sparql?query="+ encodeURIComponent(sparql_query) +"&format=json";
+				var query_contact_tp =  String(browser_conf_json.sparql_endpoint)+"?query="+ encodeURIComponent(sparql_query) +"&format=json";
 
 				//call the sparql end point and retrieve results in json format
 				$.ajax({
@@ -73,10 +75,17 @@ var browser = (function () {
 			 }
 		}
 
+		function build_extra_sec(adhoc_data_obj, category){
+			browser_conf_json = browser_conf;
+			console.log(browser_conf_json);
+			var contents = browser_conf_json.categories[category]["contents"];
+			b_htmldom.build_extra(adhoc_data_obj, contents);
+		}
+
 		function _build_page(res_data, category){
-			var group_by = browser_conf_json[category]["group_by"];
-			var links = browser_conf_json[category]["links"];
-			var text_mapping = browser_conf_json[category]["text_mapping"];
+			var group_by = browser_conf_json.categories[category]["group_by"];
+			var links = browser_conf_json.categories[category]["links"];
+			var text_mapping = browser_conf_json.categories[category]["text_mapping"];
 
 			//Group all results in one row
 			var data_with_links = _init_uris(res_data.results.bindings, links);
@@ -86,14 +95,17 @@ var browser = (function () {
 
 			console.log(JSON.parse(JSON.stringify(data_grouped)));
 
-			var dom_sections = b_htmldom.build_body(one_result, browser_conf_json[category]["contents"]);
+			var dom_sections = b_htmldom.build_body(one_result, browser_conf_json.categories[category]["contents"]);
+			console.log(document.getElementById("browser"));
 
 			//build the table under using the search module
 			// in case is an agent resource
 			if (category == "author") {
-				console.log("<"+resource+">");
-				search.do_sparql_query("<"+resource+">");
+				console.log(resource);
+				var config_mod = [{"key":"progress_loader","value":false}];
+				search.do_sparql_query("search?text="+resource+"&rule=author_works", config_mod);
 			}
+
 		}
 
 		/*map the fields with their corresponding links*/
@@ -133,12 +145,30 @@ var browser = (function () {
 			}
 
 		return {
+				build_extra_sec: build_extra_sec,
 				do_sparql_query: do_sparql_query
 		 }
 })();
 
 
 var b_util = (function () {
+
+	function get_obj_key_val(obj,key){
+		if (!is_undefined_key(obj,key)) {
+			return _obj_composed_key_val(obj,key);
+		}else {
+			return -1;
+		}
+
+		function _obj_composed_key_val(obj,key_str) {
+			var arr_key = key_str.split(".");
+			var inner_val = obj;
+			for (var i = 0; i < arr_key.length; i++) {
+				inner_val = inner_val[arr_key[i]];
+			}
+			return inner_val;
+		}
+	}
 
 	function text_mapping(obj, conf_obj) {
 		if (conf_obj != undefined) {
@@ -289,6 +319,7 @@ var b_util = (function () {
 	}
 
 	return {
+		get_obj_key_val: get_obj_key_val,
 		text_mapping: text_mapping,
 		get_sub_obj: get_sub_obj,
 		group_by: group_by,
@@ -300,6 +331,7 @@ var b_util = (function () {
 
 var b_htmldom = (function () {
 
+	var extra_container = document.getElementById("browser_extra");
 	var header_container = document.getElementById("browser_header");
 	var details_container = document.getElementById("browser_details");
 	var metrics_container = document.getElementById("browser_metrics");
@@ -403,26 +435,75 @@ var b_htmldom = (function () {
 	}
 
 	function _build_section(data_obj, contents, class_name, section){
-		var table = document.createElement("table");
-		table.className = class_name;
 
-		var mycontents = contents[section];
-		if(mycontents != undefined){
-			for (var i = 0; i < mycontents.length; i++) {
-				table.insertRow(-1).innerHTML = _init_tr(
-								b_util.collect_values(data_obj, mycontents[i].fields),
-								mycontents[i]
-							).outerHTML;
+		switch (section) {
+			case "extra":
+				_build_extra_comp(data_obj, contents, class_name);
+				break;
+
+			default:
+				var table = document.createElement("table");
+				table.className = class_name;
+
+				var mycontents = contents[section];
+				if(mycontents != undefined){
+					for (var i = 0; i < mycontents.length; i++) {
+						table.insertRow(-1).innerHTML = _init_tr(
+										b_util.collect_values(data_obj, mycontents[i].fields),
+										mycontents[i]
+									).outerHTML;
+					}
+				}
+				return table;
+		}
+
+		function _build_extra_comp(data_obj, contents, class_name) {
+			var contents_extra = b_util.get_obj_key_val(contents,"extra");
+			if (contents_extra != -1) {
+				for (var extra_key in contents_extra) {
+					var html_elem = document.getElementById(extra_key);
+					var extra_comp = contents.extra[extra_key];
+					if (html_elem != -1) {
+						switch (extra_key) {
+							case "browser_view_switch":
+								html_elem.innerHTML = __build_browser_menu(data_obj, extra_comp);
+								break;
+						}
+					}
+				}
+			}
+			function __build_browser_menu(data_obj, extra_comp){
+				var str_lis = "";
+				for (var i = 0; i < extra_comp.labels.length; i++) {
+					var is_active = "";
+
+					var regex_cat = new RegExp(extra_comp.regex[i], "g");
+					console.log(regex_cat);
+					console.log(window.location.href);
+					if(window.location.href.match(regex_cat)){
+						is_active = "active";
+					}
+
+
+					var loc_href = extra_comp.links[i].replace(/\[\[VAR\]\]/g, data_obj[extra_comp.values[i]].value);
+
+					str_lis = str_lis + "<li class='"+is_active+"'><a regex_rule="+extra_comp.regex[i]+" href="+loc_href+">"+extra_comp.labels[i]+"</a></li>"
+				}
+				return str_lis;
 			}
 		}
-		return table;
+
 	}
 	function build_body(data_obj, contents){
 
 		if (header_container == null) {
 			return -1;
 		}else {
+			//the header is a must
 			header_container.innerHTML = _build_section(data_obj, contents, "browser-header-tab", "header").outerHTML;
+			if (extra_container != null) {
+				_build_section(data_obj, contents, null, "extra");
+			}
 			if (details_container != null) {
 				details_container.innerHTML = _build_section(data_obj, contents, "browser-details-tab", "details").outerHTML;
 			}
@@ -433,7 +514,17 @@ var b_htmldom = (function () {
 		}
 	}
 
+	/*call this in case i want to build extra with ad-hoc data created*/
+	function build_extra(adhoc_data_obj, contents){
+		if (extra_container != null) {
+			if (adhoc_data_obj != null) {
+				_build_section(adhoc_data_obj, contents, null, "extra");
+			}
+		}
+	}
+
 	return {
+		build_extra: build_extra,
 		build_body: build_body
 	}
 })();
