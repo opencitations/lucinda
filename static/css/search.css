@@ -81,10 +81,6 @@
 }
 
 /* (1.1) the tab footer ---------------*/
-.table.tab-footer tr{
-  text-align:center;
-}
-
 .tab-footer {
   margin-bottom: 70px;
   table-layout:fixed;

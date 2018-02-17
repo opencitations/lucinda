@@ -54,6 +54,7 @@ var browser_conf = {
             "id_lit": {"field":"id_lit","prefix":"http://dx.doi.org/"}
           },
           "group_by": {"keys":["label"], "concats":["author","short_type"]},
+          "none_values": {"subtitle": "", "author": "No authors", "title": "Document without title"},
 
           "text_mapping": {
               "short_type":[
@@ -65,9 +66,10 @@ var browser_conf = {
           "contents": {
             "extra": {
                 "browser_view_switch":{
-                    "labels":["LDD","LUCINDA"],
+                    "labels":["ldd","Browser"],
                     "values":["short_iri","short_iri"],
                     "regex":["localhost:8080\/corpus\/br\/.*","localhost:8080\/browser\/br\/.*"],
+                    "query":[["SELECT ?resource WHERE {BIND(<https://w3id.org/oc/corpus[[VAR]]> as ?resource)}"],["SELECT ?resource WHERE {BIND(<https://w3id.org/oc/corpus[[VAR]]> as ?resource)}"]],
                     "links":["http://localhost:8080/corpus[[VAR]]","http://localhost:8080/browser[[VAR]]"]
                 }
             },
@@ -91,6 +93,10 @@ var browser_conf = {
               {"fields": ["FREE-TEXT","in_cits","FREE-TEXT"], "values": ["Cited by ",null," documents"], "classes": ["metric-entry","imp-value","metric-entry"]},
               {"classes":["10px"]},
               {"fields": ["FREE-TEXT","out_cits","FREE-TEXT"], "values": ["Cites ",null," documents"], "classes": ["metric-entry","imp-value","metric-entry"]},
+            ],
+            "oscar": [
+              {"query_text": "my_iri", "rule": "doc_cites_list", "label":"Out citations"},
+              {"query_text": "my_iri", "rule": "doc_cites_me_list", "label":"In citations"}
             ]
           }
     },
@@ -127,9 +133,10 @@ var browser_conf = {
           "contents": {
             "extra": {
                 "browser_view_switch":{
-                    "labels":["LDD","LUCINDA"],
+                    "labels":["ldd","Browser"],
                     "values":["short_iri","short_iri"],
                     "regex":["localhost:8080\/corpus\/ra\/.*","localhost:8080\/browser\/ra\/.*"],
+                    "query":[["PREFIX pro:<http://purl.org/spar/pro/> SELECT ?role WHERE {?role pro:isHeldBy <https://w3id.org/oc/corpus[[VAR]]>. ?role pro:withRole pro:author . }"],["SELECT ?role WHERE {BIND(<https://w3id.org/oc/corpus[[VAR]]> as ?role)}"]],
                     "links":["http://localhost:8080/corpus[[VAR]]","http://localhost:8080/browser[[VAR]]"]
                 }
             },
@@ -150,6 +157,9 @@ var browser_conf = {
                 {"fields": ["FREE-TEXT","in_cits_tot","FREE-TEXT"], "values": ["Cited ",null," number of times"], "classes": ["metric-entry","imp-value","metric-entry"]},
                 {"classes":["5px"]},
                 {"fields": ["FREE-TEXT","in_cits_docs","FREE-TEXT"], "values": ["\xa0\xa0\xa0 by ",null," different documents"], "classes": ["metric-entry","imp-value","metric-entry"]}
+            ],
+            "oscar": [
+              {"query_text": "author_iri", "rule": "author_works", "label":"Author's documents"}
             ]
           }
         }

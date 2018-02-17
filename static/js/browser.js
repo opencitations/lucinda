@@ -3,6 +3,7 @@ var browser = (function () {
 
 		var resource = null;
 		var browser_conf_json = {};
+		var oscar_data = {};
 
 		/*it's a document or an author*/
 		function _get_category(resource_text) {
@@ -75,36 +76,64 @@ var browser = (function () {
 			 }
 		}
 
-		function build_extra_sec(adhoc_data_obj, category){
+		function build_extra_sec(data_obj, category){
 			browser_conf_json = browser_conf;
 			console.log(browser_conf_json);
 			var contents = browser_conf_json.categories[category]["contents"];
-			b_htmldom.build_extra(adhoc_data_obj, contents);
+
+			for (var key_extra in contents.extra) {
+				var extra_comp = contents.extra[key_extra];
+				switch (key_extra) {
+					case "browser_view_switch":
+						var flag = true;
+						for (var i = 0; i < extra_comp.values.length; i++) {
+							var sparql_query = _build_turtle_query(extra_comp.query[i]);
+							sparql_query = sparql_query.replace(/\[\[VAR\]\]/g, data_obj[extra_comp.values[i]].value);
+							console.log(sparql_query);
+							var query_contact_tp =  String(browser_conf_json.sparql_endpoint)+"?query="+ encodeURIComponent(sparql_query) +"&format=json";
+							$.ajax({
+						        dataType: "json",
+						        url: query_contact_tp,
+										async: false,
+										type: 'GET',
+				    				success: function( res_data ) {
+												console.log(res_data);
+												if (res_data.results.bindings.length == 0) {
+													flag = false;
+												}
+				    				}
+						   });
+						 }
+
+						 if (flag) {
+							 b_htmldom.build_extra_comp(data_obj, contents, null, key_extra);
+						 }
+						break;
+				}
+			}
 		}
 
 		function _build_page(res_data, category){
 			var group_by = browser_conf_json.categories[category]["group_by"];
 			var links = browser_conf_json.categories[category]["links"];
+			var none_values = browser_conf_json.categories[category]["none_values"];
 			var text_mapping = browser_conf_json.categories[category]["text_mapping"];
 
 			//Group all results in one row
-			var data_with_links = _init_uris(res_data.results.bindings, links);
+			var data_none_vals = _init_none_vals(res_data.results.bindings, none_values);
+			console.log(data_none_vals);
+			var data_with_links = _init_uris(data_none_vals, links);
 			var data_grouped = b_util.group_by(data_with_links, group_by);
 			var one_result = data_grouped[0];
 			one_result = b_util.text_mapping(one_result, text_mapping);
 
 			console.log(JSON.parse(JSON.stringify(data_grouped)));
 
-			var dom_sections = b_htmldom.build_body(one_result, browser_conf_json.categories[category]["contents"]);
+			var contents = browser_conf_json.categories[category]["contents"];
+			var dom_sections = b_htmldom.build_body(one_result,contents );
 			console.log(document.getElementById("browser"));
 
-			//build the table under using the search module
-			// in case is an agent resource
-			if (category == "author") {
-				console.log(resource);
-				var config_mod = [{"key":"progress_loader","value":false}];
-				search.do_sparql_query("search?text="+resource+"&rule=author_works", config_mod);
-			}
+			//search.do_sparql_query("search?text="+one_result[oscar_tab["query_text"]].value+"&rule="+oscar_tab["rule"], config_mod);
 
 		}
 
@@ -144,7 +173,48 @@ var browser = (function () {
 				}
 			}
 
+		/*handle the none values for the fields */
+		function _init_none_vals(data, none_vals_obj){
+			var new_data = data;
+
+			for (var key_field in none_vals_obj) {
+				for (var i = 0; i < new_data.length; i++) {
+					var obj_elem = new_data[i];
+					if (!obj_elem.hasOwnProperty(key_field)) {
+						obj_elem[key_field] = {"value": none_vals_obj[key_field]};
+					}
+				}
+			}
+
+			return new_data;
+		}
+
+		function call_oscar(query,rule,a_elem_id){
+				var oscar_key = 'search?text='+query+'&rule='+rule;
+				if (!(oscar_key in oscar_data)) {
+					var config_mod = [
+							{"key":"progress_loader.title" ,"value":"Searching ..."},
+							{"key":"progress_loader.subtitle" ,"value":""},
+							{"key":"progress_loader.abort.title" ,"value":""}
+					];
+					var results = search.do_sparql_query(oscar_key, config_mod, true, browser.assign_oscar_results);
+				}else {
+					//don't call again sparql
+					console.log(oscar_data[oscar_key]);
+					search.build_table(oscar_data[oscar_key]);
+				}
+
+				b_htmldom.handle_menu(a_elem_id);
+				console.log(oscar_data);
+		}
+
+		function assign_oscar_results(oscar_key,results){
+			oscar_data[oscar_key] = results;
+		}
+
 		return {
+				assign_oscar_results: assign_oscar_results,
+				call_oscar : call_oscar,
 				build_extra_sec: build_extra_sec,
 				do_sparql_query: do_sparql_query
 		 }
@@ -153,6 +223,9 @@ var browser = (function () {
 
 var b_util = (function () {
 
+	/*get the value of obj[key]
+	key is a string with inner keys also
+	return -1 if there is no key*/
 	function get_obj_key_val(obj,key){
 		if (!is_undefined_key(obj,key)) {
 			return _obj_composed_key_val(obj,key);
@@ -331,12 +404,14 @@ var b_util = (function () {
 
 var b_htmldom = (function () {
 
+	var oscar_container = document.getElementById("search");
+	var browser_container = document.getElementById("browser");
 	var extra_container = document.getElementById("browser_extra");
 	var header_container = document.getElementById("browser_header");
 	var details_container = document.getElementById("browser_details");
 	var metrics_container = document.getElementById("browser_metrics");
 
-	function _build_str(obj,concat_style){
+	function _build_str(field, obj,concat_style){
 		if (obj.hasOwnProperty("concat-list")) {
 			return __concat_vals(obj["concat-list"],concat_style);
 		}else {
@@ -345,15 +420,16 @@ var b_htmldom = (function () {
 
 		function __get_val(obj){
 			if ((obj != null) && (obj != undefined)){
-				if (obj.value == "") {obj.value = "NONE";}
+				//if (obj.value == "") {obj.value = "NONE";}
 				var str_html = obj.value;
 				if (obj.hasOwnProperty("uri")) {
 					str_html = "<a href='"+String(obj.uri)+"'>"+obj.value+"</a>";
 				}
 				return str_html;
-			}else {
-				return "NONE";
 			}
+			/*else {
+				return "NONE";
+			}*/
 		}
 		function __concat_vals(arr,concat_style){
 			var str_html = "";
@@ -401,9 +477,9 @@ var b_htmldom = (function () {
 					var key = content_entry.fields[i];
 					if (obj_vals.hasOwnProperty(key)) {
 						if (! b_util.is_undefined_key(content_entry,"concat_style."+String(key))) {
-								elem_dom.innerHTML = _build_str(obj_vals[key],content_entry.concat_style[key]);
+								elem_dom.innerHTML = _build_str(key, obj_vals[key],content_entry.concat_style[key]);
 						}else {
-								elem_dom.innerHTML = _build_str(obj_vals[key],null);
+								elem_dom.innerHTML = _build_str(key, obj_vals[key],null);
 						}
 					}else {
 						if (key == "FREE-TEXT") {
@@ -438,7 +514,9 @@ var b_htmldom = (function () {
 
 		switch (section) {
 			case "extra":
-				_build_extra_comp(data_obj, contents, class_name);
+				for (var extra_key in contents.extra) {
+					build_extra_comp(data_obj, contents, class_name, extra_key);
+				}
 				break;
 
 			default:
@@ -456,11 +534,11 @@ var b_htmldom = (function () {
 				}
 				return table;
 		}
+	}
 
-		function _build_extra_comp(data_obj, contents, class_name) {
+	function build_extra_comp(data_obj, contents, class_name, extra_key) {
 			var contents_extra = b_util.get_obj_key_val(contents,"extra");
 			if (contents_extra != -1) {
-				for (var extra_key in contents_extra) {
 					var html_elem = document.getElementById(extra_key);
 					var extra_comp = contents.extra[extra_key];
 					if (html_elem != -1) {
@@ -470,7 +548,6 @@ var b_htmldom = (function () {
 								break;
 						}
 					}
-				}
 			}
 			function __build_browser_menu(data_obj, extra_comp){
 				var str_lis = "";
@@ -491,9 +568,8 @@ var b_htmldom = (function () {
 				}
 				return str_lis;
 			}
-		}
-
 	}
+
 	function build_body(data_obj, contents){
 
 		if (header_container == null) {
@@ -510,6 +586,9 @@ var b_htmldom = (function () {
 			if (metrics_container != null) {
 				metrics_container.innerHTML = _build_section(data_obj, contents, "browser-metrics-tab", "metrics").outerHTML;
 			}
+			if (oscar_container != null) {
+				_build_oscar_menu(data_obj, contents);
+			}
 			return {"header": header_container, "details": details_container, "metrics": metrics_container};
 		}
 	}
@@ -523,7 +602,80 @@ var b_htmldom = (function () {
 		}
 	}
 
+	function _build_oscar_menu(data_obj, contents){
+
+		var oscar_content = b_util.get_obj_key_val(contents,"oscar");
+		if (oscar_content != -1) {
+			if (oscar_content.length > 0) {
+				var config_mod = [{"key":"progress_loader","value":false}];
+				//build a nav menu
+				var menu_obj = _build_menu(oscar_content, data_obj, config_mod);
+
+				var dom_nav = document.createElement("ul");
+				dom_nav.setAttribute("id","oscar_nav");
+				dom_nav.setAttribute("class",'nav pages-nav');
+				dom_nav.innerHTML = menu_obj.str_lis;
+				//var divul = document.createElement("p");
+				//divul.appendChild(dom_nav)
+
+				oscar_container.parentNode.insertBefore(dom_nav, oscar_container);
+				//enable_oscar_menu(false);
+
+				menu_obj.active_li.click();
+			}
+		}
+		function _build_menu(oscar_content, data_obj, config_mod){
+			var str_lis = "";
+			var active_elem = null;
+			for (var i = 0; i < oscar_content.length; i++) {
+				var oscar_obj = oscar_content[i];
+
+				var a_elem = document.createElement("a");
+				var query = data_obj[oscar_obj.query_text].value;
+				var rule = oscar_obj.rule;
+				a_elem.href = "javascript:browser.call_oscar('"+query+"','"+rule+"','"+"oscar_menu_"+i+"')";
+				a_elem.innerHTML = oscar_obj["label"];
+				var is_active = "";
+				if (i == 0) {
+					is_active = "active";
+					active_elem = a_elem;
+				}
+
+				str_lis = str_lis + "<li id='"+"oscar_menu_"+i+"' class='"+is_active+"'>"+a_elem.outerHTML+"</li>";
+			}
+			return {"str_lis":str_lis, "active_li": active_elem};
+		}
+	}
+
+	function handle_menu(a_elem_id){
+		console.log(a_elem_id);
+		var arr_li = document.getElementById("oscar_nav").getElementsByTagName("li");
+
+		console.log(arr_li);
+
+		for (var i = 0; i < arr_li.length; i++) {
+			var my_li = arr_li[i];
+			if (my_li.id == a_elem_id) {
+				my_li.setAttribute("class", my_li.getAttribute("class")+" active");
+			}else {
+				my_li.setAttribute("class","");
+			}
+		}
+	}
+
+	function enable_oscar_menu(flag){
+		var oscar_nav = document.getElementById("oscar_nav");
+		if (flag) {
+			oscar_nav.style.visibility='visible';
+		}else {
+			oscar_nav.style.visibility='hidden';
+		}
+	}
+
 	return {
+		handle_menu: handle_menu,
+		enable_oscar_menu: enable_oscar_menu,
+		build_extra_comp: build_extra_comp,
 		build_extra: build_extra,
 		build_body: build_body
 	}

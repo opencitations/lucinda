@@ -1,12 +1,13 @@
-#browser {
+body.lucinda-cover{
   width:90%;
   margin-left: auto;
   margin-right: auto;
   margin-top: 30px;
-  height:auto; overflow:auto
-}
-.browser{
   font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+}
+
+#browser {
+  height:auto; overflow:auto
 }
 #browser_info{
   min-height: 200px;
@@ -126,12 +127,6 @@
 }
 
 
-/*modify search css*/
-#search_results{
-  width:100%;
-}
-
-
 /*customize dynamic elems added*/
 .imp-value{
   color: #336699;
@@ -150,7 +145,26 @@
   font-size: 145%;
 }
 
+#oscar_nav {
+  margin-top:5%;
+}
+#oscar_nav li a{font-size:150%;}
+#oscar_nav li {margin-right: 20px;}
+#oscar_nav > .active > a,
+#oscar_nav > .active > a:hover,
+#oscar_nav > .active > a:focus {
+  color: black;
+  border-bottom-color: grey ;
+}
+
 /*re-define search css components*/
+/*modify search css*/
+#search{
+  padding-top: 2%;
+}
+#search_results{
+  width:100%;
+}
 .table.tab-footer tr{
   text-align:center;
 }
