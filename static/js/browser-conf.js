@@ -68,9 +68,9 @@ var browser_conf = {
                 "browser_view_switch":{
                     "labels":["ldd","Browser"],
                     "values":["short_iri","short_iri"],
-                    "regex":["localhost:8080\/corpus\/br\/.*","localhost:8080\/browser\/br\/.*"],
+                    "regex":["w3id.org\/oc\/corpus\/br\/.*","w3id.org\/oc\/browser\/br\/.*"],
                     "query":[["SELECT ?resource WHERE {BIND(<https://w3id.org/oc/corpus[[VAR]]> as ?resource)}"],["SELECT ?resource WHERE {BIND(<https://w3id.org/oc/corpus[[VAR]]> as ?resource)}"]],
-                    "links":["http://localhost:8080/corpus[[VAR]]","http://localhost:8080/browser[[VAR]]"]
+                    "links":["https://w3id.org/oc/corpus[[VAR]]","https://w3id.org/oc/browser[[VAR]]"]
                 }
             },
             "header": [
@@ -135,9 +135,9 @@ var browser_conf = {
                 "browser_view_switch":{
                     "labels":["ldd","Browser"],
                     "values":["short_iri","short_iri"],
-                    "regex":["localhost:8080\/corpus\/ra\/.*","localhost:8080\/browser\/ra\/.*"],
+                    "regex":["w3id.org\/oc\/corpus\/ra\/.*","w3id.org\/oc\/browser\/ra\/.*"],
                     "query":[["PREFIX pro:<http://purl.org/spar/pro/> SELECT ?role WHERE {?role pro:isHeldBy <https://w3id.org/oc/corpus[[VAR]]>. ?role pro:withRole pro:author . }"],["SELECT ?role WHERE {BIND(<https://w3id.org/oc/corpus[[VAR]]> as ?role)}"]],
-                    "links":["http://localhost:8080/corpus[[VAR]]","http://localhost:8080/browser[[VAR]]"]
+                    "links":["https://w3id.org/oc/corpus[[VAR]]","https://w3id.org/oc/browser[[VAR]]"]
                 }
             },
             "header": [
