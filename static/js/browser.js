@@ -41,7 +41,7 @@ var browser = (function () {
 		function do_sparql_query(resource_iri){
 
 
-			console.log(resource_iri);
+			//console.log(resource_iri);
 			//var header_container = document.getElementById("browser_header");
 
 			if (resource_iri != "") {
@@ -58,7 +58,7 @@ var browser = (function () {
 				//since its a resource iri we put it between < >
 				var global_r = new RegExp("<VAR>", "g");
 				sparql_query = sparql_query.replace(global_r, "<"+resource+">");
-				console.log(sparql_query);
+				//console.log(sparql_query);
 
 				//use this url to contact the sparql_endpoint triple store
 				var query_contact_tp =  String(browser_conf_json.sparql_endpoint)+"?query="+ encodeURIComponent(sparql_query) +"&format=json";
@@ -69,7 +69,7 @@ var browser = (function () {
 			        url: query_contact_tp,
 							type: 'GET',
 	    				success: function( res_data ) {
-									console.log(res_data);
+									//console.log(res_data);
 									_build_page(res_data, category);
 	    				}
 			   });
@@ -78,7 +78,7 @@ var browser = (function () {
 
 		function build_extra_sec(data_obj, category){
 			browser_conf_json = browser_conf;
-			console.log(browser_conf_json);
+			//console.log(browser_conf_json);
 			var contents = browser_conf_json.categories[category]["contents"];
 
 			for (var key_extra in contents.extra) {
@@ -89,7 +89,7 @@ var browser = (function () {
 						for (var i = 0; i < extra_comp.values.length; i++) {
 							var sparql_query = _build_turtle_query(extra_comp.query[i]);
 							sparql_query = sparql_query.replace(/\[\[VAR\]\]/g, data_obj[extra_comp.values[i]].value);
-							console.log(sparql_query);
+							//console.log(sparql_query);
 							var query_contact_tp =  String(browser_conf_json.sparql_endpoint)+"?query="+ encodeURIComponent(sparql_query) +"&format=json";
 							$.ajax({
 						        dataType: "json",
@@ -97,7 +97,7 @@ var browser = (function () {
 										async: false,
 										type: 'GET',
 				    				success: function( res_data ) {
-												console.log(res_data);
+												//console.log(res_data);
 												if (res_data.results.bindings.length == 0) {
 													flag = false;
 												}
@@ -121,17 +121,17 @@ var browser = (function () {
 
 			//Group all results in one row
 			var data_none_vals = _init_none_vals(res_data.results.bindings, none_values);
-			console.log(data_none_vals);
+			//console.log(data_none_vals);
 			var data_with_links = _init_uris(data_none_vals, links);
 			var data_grouped = b_util.group_by(data_with_links, group_by);
 			var one_result = data_grouped[0];
 			one_result = b_util.text_mapping(one_result, text_mapping);
 
-			console.log(JSON.parse(JSON.stringify(data_grouped)));
+			//console.log(JSON.parse(JSON.stringify(data_grouped)));
 
 			var contents = browser_conf_json.categories[category]["contents"];
 			var dom_sections = b_htmldom.build_body(one_result,contents );
-			console.log(document.getElementById("browser"));
+			//console.log(document.getElementById("browser"));
 
 			//search.do_sparql_query("search?text="+one_result[oscar_tab["query_text"]].value+"&rule="+oscar_tab["rule"], config_mod);
 
@@ -200,12 +200,12 @@ var browser = (function () {
 					var results = search.do_sparql_query(oscar_key, config_mod, true, browser.assign_oscar_results);
 				}else {
 					//don't call again sparql
-					console.log(oscar_data[oscar_key]);
+					//console.log(oscar_data[oscar_key]);
 					search.build_table(oscar_data[oscar_key]);
 				}
 
 				b_htmldom.handle_menu(a_elem_id);
-				console.log(oscar_data);
+				//console.log(oscar_data);
 		}
 
 		function assign_oscar_results(oscar_key,results){
@@ -586,8 +586,8 @@ var b_htmldom = (function () {
 					var is_active = "";
 
 					var regex_cat = new RegExp(extra_comp.regex[i], "g");
-					console.log(regex_cat);
-					console.log(window.location.href);
+					//console.log(regex_cat);
+					//console.log(window.location.href);
 					if(window.location.href.match(regex_cat)){
 						is_active = "active";
 					}
@@ -679,10 +679,10 @@ var b_htmldom = (function () {
 	}
 
 	function handle_menu(a_elem_id){
-		console.log(a_elem_id);
+		//console.log(a_elem_id);
 		var arr_li = document.getElementById("oscar_nav").getElementsByTagName("li");
 
-		console.log(arr_li);
+		//console.log(arr_li);
 
 		for (var i = 0; i < arr_li.length; i++) {
 			var my_li = arr_li[i];
