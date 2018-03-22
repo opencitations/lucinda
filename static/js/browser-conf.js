@@ -96,8 +96,8 @@ var browser_conf = {
               //{"fields": ["FUNC"], "values": [{"name": call_crossref, "param":{"fields":["id_lit"],"values":[null]}}], "classes": ["metrics-title"]}
             ],
             "oscar": [
-              {"query_text": "my_iri", "rule": "doc_cites_list", "label":"Out citations"},
-              {"query_text": "my_iri", "rule": "doc_cites_me_list", "label":"In citations"}
+              {"query_text": "my_iri", "rule": "doc_cites_list", "label":"References"},
+              {"query_text": "my_iri", "rule": "doc_cites_me_list", "label":"Citations"}
             ]
           }
     },
