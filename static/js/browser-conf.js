@@ -20,7 +20,7 @@ var browser_conf = {
     "document": {
           "rule": "br\/.*",
           "query": [
-            "SELECT ?my_iri ?short_iri ?id_lit ?type ?short_type ?label ?title ?subtitle ?year ?author_iri ?author (COUNT(distinct ?cites) AS ?out_cits) (COUNT(distinct ?cited_by) AS ?in_cits) WHERE {",
+            "SELECT ?my_iri ?short_iri ?id_lit ?type ?short_type ?label ?title ?subtitle ?year ?author_iri ?author_browser_iri ?author (COUNT(distinct ?cites) AS ?out_cits) (COUNT(distinct ?cited_by) AS ?in_cits) WHERE {",
                  "BIND(<VAR> as ?my_iri) .",
                  "?my_iri rdfs:label ?label .",
                  "?my_iri rdf:type ?type .",
@@ -42,14 +42,15 @@ var browser_conf = {
                               "pro:withRole pro:author ;",
                               "pro:isHeldBy ?author_iri",
                           "].",
+                          "BIND(REPLACE(STR(?author_iri), '/corpus/', '/browser/', 'i') as ?author_browser_iri) .",
                           "?author_iri foaf:familyName ?fname .",
                           "?author_iri foaf:givenName ?name .",
                           "BIND(CONCAT(STR(?name),' ', STR(?fname)) as ?author) .",
                    "}",
-            "} GROUP BY ?my_iri ?short_iri ?id_lit ?type ?short_type ?label ?title ?subtitle ?year ?author_iri ?author"
+            "} GROUP BY ?my_iri ?short_iri ?id_lit ?type ?short_type ?label ?title ?subtitle ?year ?author_iri ?author_browser_iri ?author"
           ],
           "links": {
-            "author": {"field":"author_iri","prefix":""},
+            "author": {"field":"author_browser_iri","prefix":""},
             "short_type": {"field":"type","prefix":""},
             "id_lit": {"field":"id_lit","prefix":"http://dx.doi.org/"}
           },
