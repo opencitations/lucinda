@@ -49,8 +49,8 @@ var browser_conf = {
             "} GROUP BY ?my_iri ?short_iri ?id_lit ?type ?short_type ?label ?title ?subtitle ?year ?author_iri ?author"
           ],
           "links": {
-            "author": {"field":"author_iri","prefix":null},
-            "short_type": {"field":"type","prefix":null},
+            "author": {"field":"author_iri","prefix":""},
+            "short_type": {"field":"type","prefix":""},
             "id_lit": {"field":"id_lit","prefix":"http://dx.doi.org/"}
           },
           "group_by": {"keys":["label"], "concats":["author","short_type"]},
@@ -92,7 +92,8 @@ var browser_conf = {
               {"classes":["15px"]},
               {"fields": ["FREE-TEXT","in_cits","FREE-TEXT"], "values": ["Cited by ",null," documents"], "classes": ["metric-entry","imp-value","metric-entry"]},
               {"classes":["10px"]},
-              {"fields": ["FREE-TEXT","out_cits","FREE-TEXT"], "values": ["Cites ",null," documents"], "classes": ["metric-entry","imp-value","metric-entry"]},
+              {"fields": ["FREE-TEXT","out_cits","FREE-TEXT"], "values": ["Cites ",null," documents"], "classes": ["metric-entry","imp-value","metric-entry"]}
+              //{"fields": ["FUNC"], "values": [{"name": call_crossref, "param":{"fields":["id_lit"],"values":[null]}}], "classes": ["metrics-title"]}
             ],
             "oscar": [
               {"query_text": "my_iri", "rule": "doc_cites_list", "label":"Out citations"},
@@ -164,4 +165,23 @@ var browser_conf = {
           }
         }
       }
+}
+
+//"FUNC" {"name": call_crossref, "param":{"fields":[],"vlaues":[]}}
+function call_crossref(str_doi, field){
+  var call_crossref_api = "https://api.crossref.org/works/";
+  var call_url =  call_crossref_api+ encodeURIComponent(str_doi);
+
+  $.ajax({
+        dataType: "json",
+        url: call_url,
+        type: 'GET',
+        success: function( res_obj ) {
+            console.log(res_obj);
+            if (field in res_obj) {
+                return String(res_obj[field]);
+            }
+        }
+   });
+   return "";
 }

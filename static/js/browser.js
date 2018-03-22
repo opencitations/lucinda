@@ -485,6 +485,33 @@ var b_htmldom = (function () {
 						if (key == "FREE-TEXT") {
 							elem_dom.innerHTML = content_entry.values[i];
 						}else {
+							if (key == "FUNC") {
+								var func_obj = content_entry.values[i]
+								//my func name
+								var func_name = func_obj['name'];
+
+								//my func params
+								var func_param = []
+								var func_param_fields = func_obj['param']['fields'];
+								var func_param_values = func_obj['param']['values'];
+								for (var i = 0; i < func_param_fields.length; i++) {
+									var p_field = func_param_fields[i];
+									if ( p_field == "FREE-TEXT"){
+										param.push(func_param_values[i]);
+									}else {
+										if (obj_vals.hasOwnProperty(p_field)) {
+											if (! b_util.is_undefined_key(content_entry,"concat_style."+String(p_field))) {
+													param.push(_build_str(p_field, obj_vals[p_field],content_entry.concat_style[p_field]));
+											}else {
+													param.push(_build_str(p_field, obj_vals[p_field],null));
+											}
+										}
+									}
+								}
+
+
+								extdata = Reflect.apply(func_name,undefined,func_param);
+							}
 							//empty value
 							elem_dom.innerHTML = "NONE";
 						}
@@ -499,6 +526,7 @@ var b_htmldom = (function () {
 					str_innerHtml = str_innerHtml+ String(elem_dom.outerHTML);
 				}
 
+				//var str_innerHtml = process_contents(obj_vals,content_entry);
 				myCell.innerHTML = str_innerHtml;
 			}
 		}else {
@@ -508,6 +536,9 @@ var b_htmldom = (function () {
 
 		tr.appendChild(myCell);
 		return tr;
+	}
+
+	function process_contents(obj_vals,content_entry) {
 	}
 
 	function _build_section(data_obj, contents, class_name, section){
