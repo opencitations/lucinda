@@ -83,7 +83,7 @@ var browser_conf = {
             "details": [
               {"classes":["20px"]},
               {"fields": ["FREE-TEXT","id_lit"], "values":["DOI : ", null] },
-              {"fields": ["FREE-TEXT","year"], "values":["Publication year : ", null] },
+              {"fields": ["FREE-TEXT","year"], "values":["Publication date : ", null] },
               {"fields": ["FREE-TEXT","short_type"], "values":["Document type : ",null], "concat_style":{"short_type": "last"} }
             ],
             "metrics": [
