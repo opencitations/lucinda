@@ -475,15 +475,16 @@ var b_htmldom = (function () {
 					var elem_dom = document.createElement("elem");
 
 					var key = content_entry.fields[i];
+					var inner_text = "NONE"
 					if (obj_vals.hasOwnProperty(key)) {
 						if (! b_util.is_undefined_key(content_entry,"concat_style."+String(key))) {
-								elem_dom.innerHTML = _build_str(key, obj_vals[key],content_entry.concat_style[key]);
+								inner_text = _build_str(key, obj_vals[key],content_entry.concat_style[key]);
 						}else {
-								elem_dom.innerHTML = _build_str(key, obj_vals[key],null);
+								inner_text = _build_str(key, obj_vals[key],null);
 						}
 					}else {
 						if (key == "FREE-TEXT") {
-							elem_dom.innerHTML = content_entry.values[i];
+							 inner_text = content_entry.values[i];
 						}else {
 							if (key == "FUNC") {
 								var func_obj = content_entry.values[i]
@@ -494,10 +495,10 @@ var b_htmldom = (function () {
 								var func_param = []
 								var func_param_fields = func_obj['param']['fields'];
 								var func_param_values = func_obj['param']['values'];
-								for (var i = 0; i < func_param_fields.length; i++) {
-									var p_field = func_param_fields[i];
+								for (var j = 0; j < func_param_fields.length; j++) {
+									var p_field = func_param_fields[j];
 									if ( p_field == "FREE-TEXT"){
-										param.push(func_param_values[i]);
+										param.push(func_param_values[j]);
 									}else {
 										if (obj_vals.hasOwnProperty(p_field)) {
 											if (! b_util.is_undefined_key(content_entry,"concat_style."+String(p_field))) {
@@ -509,13 +510,31 @@ var b_htmldom = (function () {
 									}
 								}
 
-
 								extdata = Reflect.apply(func_name,undefined,func_param);
 							}
-							//empty value
-							elem_dom.innerHTML = "NONE";
 						}
 					}
+
+
+					//check heuristics
+					var add_it = true;
+					if (content_entry.respects != undefined) {
+						if (content_entry.respects[i] != undefined) {
+							var my_heur = content_entry.respects[i];
+							for (var j = 0; j < my_heur.length; j++) {
+								var h_func = my_heur[j];
+								add_it = Reflect.apply(h_func,undefined,[inner_text]);
+							}
+						}
+					}
+
+					if (!add_it) {
+						str_innerHtml = "";
+						break;
+					}
+					
+					elem_dom.innerHTML = inner_text;
+					//elem_dom.innerHTML = "NONE";
 
 					if (content_entry.classes != undefined) {
 						if (content_entry.classes[i] != undefined) {

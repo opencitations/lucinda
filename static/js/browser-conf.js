@@ -93,7 +93,7 @@ var browser_conf = {
               {"classes":["15px"]},
               {"fields": ["FREE-TEXT","in_cits","FREE-TEXT"], "values": ["Cited by ",null," documents"], "classes": ["metric-entry","imp-value","metric-entry"]},
               {"classes":["10px"]},
-              {"fields": ["FREE-TEXT","out_cits","FREE-TEXT"], "values": ["Cites ",null," documents"], "classes": ["metric-entry","imp-value","metric-entry"]}
+              {"fields": ["FREE-TEXT","out_cits","FREE-TEXT"], "values": ["Cites ",null," documents"], "classes": ["metric-entry","imp-value","metric-entry"], "respects":[[],[more_than_zero],[]]}
               //{"fields": ["FUNC"], "values": [{"name": call_crossref, "param":{"fields":["id_lit"],"values":[null]}}], "classes": ["metrics-title"]}
             ],
             "oscar": [
@@ -185,4 +185,10 @@ function call_crossref(str_doi, field){
         }
    });
    return "";
+}
+
+
+//Heuristics
+function more_than_zero(val){
+  return parseInt(val) > 0
 }
