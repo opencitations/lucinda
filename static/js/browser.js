@@ -368,7 +368,9 @@ var b_util = (function () {
 		if ((obj != null) && (obj != undefined) && (keys != null) && (keys != undefined)) {
 			for (var k in obj) {
 				if (obj.hasOwnProperty(k)){
-					if (keys.indexOf(k) != -1) {
+					if (keys == 1) {
+						new_obj[k] = obj[k];
+					}else if (keys.indexOf(k) != -1){
 						new_obj[k] = obj[k];
 					}
 				}
@@ -411,19 +413,21 @@ var b_htmldom = (function () {
 	var details_container = document.getElementById("browser_details");
 	var metrics_container = document.getElementById("browser_metrics");
 
-	function _build_str(field, obj,concat_style){
+	function _build_str(field, obj,concat_style, include_link = true){
 		if (obj.hasOwnProperty("concat-list")) {
-			return __concat_vals(obj["concat-list"],concat_style);
+			return __concat_vals(obj["concat-list"],concat_style, include_link);
 		}else {
-			return __get_val(obj);
+			return __get_val(obj, include_link);
 		}
 
-		function __get_val(obj){
+		function __get_val(obj, include_link){
 			if ((obj != null) && (obj != undefined)){
 				//if (obj.value == "") {obj.value = "NONE";}
 				var str_html = obj.value;
-				if (obj.hasOwnProperty("uri")) {
-					str_html = "<a href='"+String(obj.uri)+"'>"+obj.value+"</a>";
+				if (include_link) {
+					if (obj.hasOwnProperty("uri")) {
+						str_html = "<a href='"+String(obj.uri)+"'>"+obj.value+"</a>";
+					}
 				}
 				return str_html;
 			}
@@ -431,7 +435,7 @@ var b_htmldom = (function () {
 				return "NONE";
 			}*/
 		}
-		function __concat_vals(arr,concat_style){
+		function __concat_vals(arr,concat_style, include_link){
 			var str_html = "";
 			var separator = ", ";
 
@@ -449,7 +453,7 @@ var b_htmldom = (function () {
 			for (var i = 0; i < arr.length; i++) {
 				var obj = arr[i];
 				if (i == arr.length - 1) {separator = " ";}
-				str_html = str_html + __get_val(obj) + separator;
+				str_html = str_html + __get_val(obj,include_link) + separator;
 			}
 			return str_html;
 		}
@@ -470,6 +474,7 @@ var b_htmldom = (function () {
 			if (content_entry.fields.length > 0) {
 
 				str_innerHtml = "";
+				//console.log(JSON.stringify(obj_vals));
 				for (var i = 0; i < content_entry.fields.length; i++) {
 
 					var elem_dom = document.createElement("elem");
@@ -498,19 +503,19 @@ var b_htmldom = (function () {
 								for (var j = 0; j < func_param_fields.length; j++) {
 									var p_field = func_param_fields[j];
 									if ( p_field == "FREE-TEXT"){
-										param.push(func_param_values[j]);
+										func_param.push(func_param_values[j]);
 									}else {
 										if (obj_vals.hasOwnProperty(p_field)) {
 											if (! b_util.is_undefined_key(content_entry,"concat_style."+String(p_field))) {
-													param.push(_build_str(p_field, obj_vals[p_field],content_entry.concat_style[p_field]));
+													func_param.push(_build_str(p_field, obj_vals[p_field],content_entry.concat_style[p_field], include_link= false));
 											}else {
-													param.push(_build_str(p_field, obj_vals[p_field],null));
+													func_param.push(_build_str(p_field, obj_vals[p_field],null, include_link= false));
 											}
 										}
 									}
 								}
 
-								extdata = Reflect.apply(func_name,undefined,func_param);
+								inner_text = Reflect.apply(func_name,undefined,func_param);
 							}
 						}
 					}
@@ -532,7 +537,7 @@ var b_htmldom = (function () {
 						str_innerHtml = "";
 						break;
 					}
-					
+
 					elem_dom.innerHTML = inner_text;
 					//elem_dom.innerHTML = "NONE";
 
@@ -577,7 +582,8 @@ var b_htmldom = (function () {
 				if(mycontents != undefined){
 					for (var i = 0; i < mycontents.length; i++) {
 						table.insertRow(-1).innerHTML = _init_tr(
-										b_util.collect_values(data_obj, mycontents[i].fields),
+										//b_util.collect_values(data_obj, mycontents[i].fields),
+										b_util.collect_values(data_obj, 1),
 										mycontents[i]
 									).outerHTML;
 					}

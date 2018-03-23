@@ -83,9 +83,10 @@ var browser_conf = {
             ],
             "details": [
               {"classes":["20px"]},
-              {"fields": ["FREE-TEXT","id_lit"], "values":["DOI : ", null] },
-              {"fields": ["FREE-TEXT","year"], "values":["Publication date : ", null] },
-              {"fields": ["FREE-TEXT","short_type"], "values":["Document type : ",null], "concat_style":{"short_type": "last"} }
+              {"fields": ["FREE-TEXT","id_lit"], "values":["DOI: ", null] },
+              {"fields": ["FREE-TEXT","year"], "values":["Publication date: ", null] },
+              {"fields": ["FREE-TEXT","short_type"], "values":["Document type: ",null], "concat_style":{"short_type": "last"} },
+              {"fields": ["FREE-TEXT", "FUNC"], "values": ["Publisher: ", {"name": call_crossref, "param":{"fields":["id_lit","FREE-TEXT"],"values":[null,"message.publisher"]}}] }
             ],
             "metrics": [
               {"classes":["30px"]},
@@ -94,7 +95,6 @@ var browser_conf = {
               {"fields": ["FREE-TEXT","in_cits","FREE-TEXT"], "values": ["Cited by ",null," documents"], "classes": ["metric-entry","imp-value","metric-entry"]},
               {"classes":["10px"]},
               {"fields": ["FREE-TEXT","out_cits","FREE-TEXT"], "values": ["Cites ",null," documents"], "classes": ["metric-entry","imp-value","metric-entry"], "respects":[[],[more_than_zero],[]]}
-              //{"fields": ["FUNC"], "values": [{"name": call_crossref, "param":{"fields":["id_lit"],"values":[null]}}], "classes": ["metrics-title"]}
             ],
             "oscar": [
               {"query_text": "my_iri", "rule": "doc_cites_list", "label":"References"},
@@ -173,18 +173,23 @@ function call_crossref(str_doi, field){
   var call_crossref_api = "https://api.crossref.org/works/";
   var call_url =  call_crossref_api+ encodeURIComponent(str_doi);
 
+  var result_data = "";
   $.ajax({
         dataType: "json",
         url: call_url,
         type: 'GET',
+        async: false,
         success: function( res_obj ) {
-            console.log(res_obj);
-            if (field in res_obj) {
-                return String(res_obj[field]);
+            if (field == 1) {
+              result_data = res_obj;
+            }else {
+              if (!b_util.is_undefined_key(res_obj,field)) {
+                result_data = b_util.get_obj_key_val(res_obj,field);
+              }
             }
         }
    });
-   return "";
+   return result_data;
 }
 
 
