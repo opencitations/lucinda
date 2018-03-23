@@ -86,7 +86,7 @@ var browser_conf = {
               {"fields": ["FREE-TEXT","id_lit"], "values":["DOI: ", null] },
               {"fields": ["FREE-TEXT","year"], "values":["Publication date: ", null] },
               {"fields": ["FREE-TEXT","short_type"], "values":["Document type: ",null], "concat_style":{"short_type": "last"} },
-              {"fields": ["FREE-TEXT", "FUNC"], "values": ["Publisher: ", {"name": call_crossref, "param":{"fields":["id_lit","FREE-TEXT"],"values":[null,"message.publisher"]}}] }
+              {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Publisher: ", "crossref4doi.message.publisher"]}
             ],
             "metrics": [
               {"classes":["30px"]},
@@ -100,7 +100,10 @@ var browser_conf = {
               {"query_text": "my_iri", "rule": "doc_cites_list", "label":"References"},
               {"query_text": "my_iri", "rule": "doc_cites_me_list", "label":"Citations"}
             ]
-          }
+          },
+          "ext_data": {
+            "crossref4doi": {"name": call_crossref, "param": {"fields":["id_lit","FREE-TEXT"],"values":[null,1]}}
+          },
     },
 
     "author": {

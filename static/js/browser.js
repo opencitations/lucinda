@@ -4,6 +4,7 @@ var browser = (function () {
 		var resource = null;
 		var browser_conf_json = {};
 		var oscar_data = {};
+		var ext_data = {};
 
 		/*it's a document or an author*/
 		function _get_category(resource_text) {
@@ -118,15 +119,16 @@ var browser = (function () {
 			var links = browser_conf_json.categories[category]["links"];
 			var none_values = browser_conf_json.categories[category]["none_values"];
 			var text_mapping = browser_conf_json.categories[category]["text_mapping"];
+			var ext_data_obj = browser_conf_json.categories[category]["ext_data"];
 
-			//Group all results in one row
 			var data_none_vals = _init_none_vals(res_data.results.bindings, none_values);
 			//console.log(data_none_vals);
 			var data_with_links = _init_uris(data_none_vals, links);
 			var data_grouped = b_util.group_by(data_with_links, group_by);
 			var one_result = data_grouped[0];
 			one_result = b_util.text_mapping(one_result, text_mapping);
-
+			_exec_ext_data(one_result, ext_data_obj);
+			//console.log(ext_data);
 			//console.log(JSON.parse(JSON.stringify(data_grouped)));
 
 			var contents = browser_conf_json.categories[category]["contents"];
@@ -135,6 +137,45 @@ var browser = (function () {
 
 			//search.do_sparql_query("search?text="+one_result[oscar_tab["query_text"]].value+"&rule="+oscar_tab["rule"], config_mod);
 
+		}
+
+		function get_ext_data() {
+			return ext_data;
+		}
+
+		/*retrieve the externa data*/
+		function _exec_ext_data(obj_vals, ext_data_obj){
+			//console.log(ext_data_obj,obj_vals);
+			if (ext_data_obj != undefined) {
+				for (var key in ext_data_obj) {
+
+					var res = -1;
+					var func_obj = ext_data_obj[key];
+					//my func name
+					var func_name = func_obj['name'];
+
+					//my func params
+					var func_param = []
+					var func_param_fields = func_obj['param']['fields'];
+					var func_param_values = func_obj['param']['values'];
+					for (var j = 0; j < func_param_fields.length; j++) {
+						var p_field = func_param_fields[j];
+						if ( p_field == "FREE-TEXT"){
+							func_param.push(func_param_values[j]);
+						}else {
+							if (obj_vals.hasOwnProperty(p_field)) {
+								if (! b_util.is_undefined_key(func_obj,"concat_style."+String(p_field))) {
+										func_param.push(b_util.build_str(p_field, obj_vals[p_field],func_obj.concat_style[p_field], include_link= false));
+								}else {
+										func_param.push(b_util.build_str(p_field, obj_vals[p_field],null, include_link= false));
+								}
+							}
+						}
+					}
+					res = Reflect.apply(func_name,undefined,func_param);
+					ext_data[key] = res;
+				}
+			}
 		}
 
 		/*map the fields with their corresponding links*/
@@ -216,7 +257,8 @@ var browser = (function () {
 				assign_oscar_results: assign_oscar_results,
 				call_oscar : call_oscar,
 				build_extra_sec: build_extra_sec,
-				do_sparql_query: do_sparql_query
+				do_sparql_query: do_sparql_query,
+				get_ext_data: get_ext_data
 		 }
 })();
 
@@ -393,27 +435,7 @@ var b_util = (function () {
 		return new_obj;
 	}
 
-	return {
-		get_obj_key_val: get_obj_key_val,
-		text_mapping: text_mapping,
-		get_sub_obj: get_sub_obj,
-		group_by: group_by,
-		is_undefined_key: is_undefined_key,
-		collect_values: collect_values
-	}
-})();
-
-
-var b_htmldom = (function () {
-
-	var oscar_container = document.getElementById("search");
-	var browser_container = document.getElementById("browser");
-	var extra_container = document.getElementById("browser_extra");
-	var header_container = document.getElementById("browser_header");
-	var details_container = document.getElementById("browser_details");
-	var metrics_container = document.getElementById("browser_metrics");
-
-	function _build_str(field, obj,concat_style, include_link = true){
+	function build_str(field, obj,concat_style, include_link = true){
 		if (obj.hasOwnProperty("concat-list")) {
 			return __concat_vals(obj["concat-list"],concat_style, include_link);
 		}else {
@@ -458,6 +480,28 @@ var b_htmldom = (function () {
 			return str_html;
 		}
 	}
+
+	return {
+		get_obj_key_val: get_obj_key_val,
+		text_mapping: text_mapping,
+		get_sub_obj: get_sub_obj,
+		group_by: group_by,
+		is_undefined_key: is_undefined_key,
+		collect_values: collect_values,
+		build_str: build_str
+	}
+})();
+
+
+var b_htmldom = (function () {
+
+	var oscar_container = document.getElementById("search");
+	var browser_container = document.getElementById("browser");
+	var extra_container = document.getElementById("browser_extra");
+	var header_container = document.getElementById("browser_header");
+	var details_container = document.getElementById("browser_details");
+	var metrics_container = document.getElementById("browser_metrics");
+
 	function _init_tr(obj_vals, content_entry){
 		var tr = document.createElement("tr");
 
@@ -483,39 +527,20 @@ var b_htmldom = (function () {
 					var inner_text = "NONE"
 					if (obj_vals.hasOwnProperty(key)) {
 						if (! b_util.is_undefined_key(content_entry,"concat_style."+String(key))) {
-								inner_text = _build_str(key, obj_vals[key],content_entry.concat_style[key]);
+								inner_text = b_util.build_str(key, obj_vals[key],content_entry.concat_style[key]);
 						}else {
-								inner_text = _build_str(key, obj_vals[key],null);
+								inner_text = b_util.build_str(key, obj_vals[key],null);
 						}
 					}else {
 						if (key == "FREE-TEXT") {
 							 inner_text = content_entry.values[i];
 						}else {
-							if (key == "FUNC") {
-								var func_obj = content_entry.values[i]
-								//my func name
-								var func_name = func_obj['name'];
-
-								//my func params
-								var func_param = []
-								var func_param_fields = func_obj['param']['fields'];
-								var func_param_values = func_obj['param']['values'];
-								for (var j = 0; j < func_param_fields.length; j++) {
-									var p_field = func_param_fields[j];
-									if ( p_field == "FREE-TEXT"){
-										func_param.push(func_param_values[j]);
-									}else {
-										if (obj_vals.hasOwnProperty(p_field)) {
-											if (! b_util.is_undefined_key(content_entry,"concat_style."+String(p_field))) {
-													func_param.push(_build_str(p_field, obj_vals[p_field],content_entry.concat_style[p_field], include_link= false));
-											}else {
-													func_param.push(_build_str(p_field, obj_vals[p_field],null, include_link= false));
-											}
-										}
-									}
+							if (key == "EXT_DATA") {
+								var data_field = content_entry.values[i];
+								var lucinda_ext_data = browser.get_ext_data();
+								if (! b_util.is_undefined_key(lucinda_ext_data, data_field)) {
+									inner_text = b_util.get_obj_key_val(lucinda_ext_data, data_field);
 								}
-
-								inner_text = Reflect.apply(func_name,undefined,func_param);
 							}
 						}
 					}
