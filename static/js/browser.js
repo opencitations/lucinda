@@ -59,7 +59,7 @@ var browser = (function () {
 				//since its a resource iri we put it between < >
 				var global_r = new RegExp("<VAR>", "g");
 				sparql_query = sparql_query.replace(global_r, "<"+resource+">");
-				//console.log(sparql_query);
+				console.log(sparql_query);
 
 				//use this url to contact the sparql_endpoint triple store
 				var query_contact_tp =  String(browser_conf_json.sparql_endpoint)+"?query="+ encodeURIComponent(sparql_query) +"&format=json";
