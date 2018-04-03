@@ -8,11 +8,13 @@ var search = (function () {
 		//var cache_data = {};
 		var async_call;
 		var table_conf ={
+				data_key: null,
 				data: null,
 				category: "",
 				filters : {"limit":null, "arr_entries":[], "fields":[], "data":null},
 				view: {"data": null, "page": 0, "page_limit": null, "fields_filter_index":{}, "sort": {"field":null, "order":null, "type":null}}
 		}
+
 
 		/* get the rules that matches my query_text*/
 		function _get_rules(query_text) {
@@ -87,7 +89,7 @@ var search = (function () {
 				}
 
 				//decode all boolean connectors
-				reg = /bc_\d{1,}=(.+?)(?=&text)/g;
+				reg = /bc=(.+?)(?=&text)/g;
 				while (match = reg.exec(qtext)) {
 					res.bcs.push(match[1]);
 				}
@@ -155,7 +157,7 @@ var search = (function () {
 
 				var sparql_query = composed_query.replace(/\[\[RULE\]\]/g, query_allrules);
 				//console.log(sparql_query);
-				console.log(sparql_query);
+				//console.log(sparql_query);
 				return sparql_query;
 			}
 		}
@@ -275,18 +277,21 @@ var search = (function () {
 							var heuristic_fun = heuristic_arr_elem[j];
 							heuristic_val_text = Reflect.apply(heuristic_fun,undefined,[heuristic_val_text]);
 						}
-						heuristic_vals_arr.push(heuristic_val_text);
+						//in case the value originated from the heuristic is different than the original one
+						if (heuristic_val_text != val_qtext) {
+							heuristic_vals_arr.push(heuristic_val_text);
+						}
 					}
 
 					//i have heuristics to apply
 					var heuristic_rule_arr = [];
 					var heuristic_bcs_arr = [];
 					//populate arr of rules
-					for (var i = 0; i < rule.heuristics.length; i++) {
+					for (var i = 0; i < heuristic_vals_arr.length; i++) {
 						heuristic_rule_arr.push(rule);
 					}
 					//populate arr of bcs
-					for (var i = 0; i < rule.heuristics.length; i++) {
+					for (var i = 0; i < heuristic_vals_arr.length; i++) {
 						heuristic_bcs_arr.push("or");
 					}
 					return {"values":heuristic_vals_arr, "rules":heuristic_rule_arr, "connectors":heuristic_bcs_arr};
@@ -318,18 +323,20 @@ var search = (function () {
 								if (util.get_obj_key_val(search_conf_json,"progress_loader.visible") == true) {
 									htmldom.loader(false);
 								}
-								console.log(JSON.parse(JSON.stringify(res_data)));
+								//console.log(JSON.parse(JSON.stringify(res_data)));
 
 								if ((rule_index >= rules.length -1) || (res_data.results.bindings.length > 0)) {
+									sparql_results = res_data;
 									//I have only 1 rule
 									cat_conf = rule_category;
-									//util.printobj(cat_conf);
+
+									//in this case don't build the table directly 
 									if (callbk_fun != null) {
-					 				 Reflect.apply(callbk_fun,undefined,[sparql_query_add,JSON.parse(JSON.stringify(res_data))]);
+									 //look at the rule name
+					 				 Reflect.apply(callbk_fun,undefined,[query_text, JSON.parse(JSON.stringify(res_data))]);
+									 return JSON.parse(JSON.stringify(res_data));
 					 			 	}
 									build_table(res_data);
-									sparql_results = res_data;
-
 
 								}else {
 										var sparql_query = _build_sparql_query(rules[rule_index+1], query_text);
@@ -371,7 +378,7 @@ var search = (function () {
 
 			//initialize and get the search_config_json
 			search_conf_json = search_conf;
-			console.log(search_conf_json);
+			//console.log(search_conf_json);
 
 			//sync or async
 			async_call = async_bool;
@@ -384,7 +391,7 @@ var search = (function () {
 
 			if (query_comp.values.length != 0) {
 				if (query_comp.rules.length == 0) {
-					console.log("It's a freetext search!");
+					//console.log("It's a freetext search!");
 					//one text box
 					var qtext = query_comp.values[0];
 					var rules = _get_rules(qtext);
@@ -394,7 +401,7 @@ var search = (function () {
 						_call_ts(r_cat, rules, 0, sparql_query, qtext, qtext, callbk_fun);
 					}else {}
 				}else{
-					console.log("It's an advanced search!");
+					//console.log("It's an advanced search!");
 					//it's an advanced query
 					var sparql_query = build_adv_sparql_query(
 											query_comp.values,
@@ -402,7 +409,7 @@ var search = (function () {
 											query_comp.bcs
 										);
 					var r_cat = search_conf_json.categories[util.index_in_arrjsons(search_conf_json.categories,["name"],[_get_rule_by_name(query_comp.rules[0]).category])];
-					_call_ts(r_cat, [], 0, sparql_query, null, null, callbk_fun);
+					_call_ts(r_cat, [], 0, sparql_query, qtext, null, callbk_fun);
 				}
 			 }else {
 					var val_adv = util.get_obj_key_val(search_conf_json,"advanced_search");
@@ -444,6 +451,38 @@ var search = (function () {
 			table_conf.data = JSON.parse(JSON.stringify(json_data));
 			// keep only the fields I want
 			var fields = category_conf_obj.fields;
+
+			//assign the data key
+			for (var i = 0; i < fields.length; i++) {
+				if ("iskey" in fields[i]) {
+					if (fields[i]["iskey"] == true) {
+						table_conf.data_key = fields[i].value;
+					}
+				}
+			}
+
+			// check if there is ext_data columns also
+			var ext_data_fields = [];
+			for (var i = 0; i < fields.length; i++) {
+				if (fields[i].value.startsWith("ext_data")) {
+					var all_parts = fields[i].value.split(".");
+					var data_field = "";
+					var sep = ".";
+					for (var j = 2; j < all_parts.length; j++) {
+						if (j == all_parts.length-1) {
+							sep = "";
+						}
+						data_field = data_field + all_parts[j] + sep;
+					}
+					ext_data_fields.push({
+						"full_name": fields[i].value,
+						"func_name": all_parts[1],
+						"data_field": data_field
+					});
+				}
+			}
+			//console.log(ext_data_fields);
+
 			// the header first
 			var new_header = [];
 			for (var i = 0; i < table_conf.data.head.vars.length; i++) {
@@ -452,21 +491,52 @@ var search = (function () {
 					new_header.push(table_conf.data.head.vars[i]);
 				}
 			}
+			for (var i = 0; i < ext_data_fields.length; i++) {
+				new_header.push(ext_data_fields[i]["full_name"]);
+			}
 			table_conf.data.head.vars = new_header;
+			//console.log(table_conf.data.head.vars);
+
 			// now the results
 			for (var i = 0; i < table_conf.data.results.bindings.length; i++) {
+
+				for (var j = 0; j < ext_data_fields.length; j++) {
+					var key_full_name = ext_data_fields[j]["full_name"];
+					var key_func_name = ext_data_fields[j]["func_name"];
+					var func_obj = category_conf_obj["ext_data"][key_func_name];
+					if (func_obj != undefined) {
+						var async_val = true;
+						if (func_obj["async"] != undefined) {
+								async_val = func_obj["async"];
+						}
+
+						table_conf.data.results.bindings[i][key_full_name] = {"value":"", "label":""};
+						var ext_res = _exec_ext_data(
+									func_obj,
+									table_conf.data.results.bindings[i][table_conf.data_key].value,
+									async_val,
+									search.callbk_update_data_entry_val,
+									key_full_name,
+									func_obj.name,
+									table_conf.data.results.bindings[i],
+									ext_data_fields[j]["data_field"]
+						);
+
+					}
+				}
+
 				for (var key in table_conf.data.results.bindings[i]) {
 						if(util.index_in_arrjsons(fields,["value"],[key]) == -1){
 							delete table_conf.data.results.bindings[i][key];
 						}
 				}
 			}
+			//console.log(table_conf.data.results.bindings);
 
 			//set all the other table_conf fields
 			//init all the filtered fields
 			//-- filtered data
 			table_conf.filters.data = JSON.parse(JSON.stringify(table_conf.data));
-
 
 			//-- the filtered checked fields
 			table_conf.filters.arr_entries = [];
@@ -512,40 +582,38 @@ var search = (function () {
 				var obj_elem = new_data[i];
 				for (var key_field in obj_elem) {
 					if (obj_elem.hasOwnProperty(key_field)) {
-						new_data[i] = _get_uri(new_data[i], key_field);
-					}
-				}
-			}
-			return new_data;
-
-			function _get_uri(elem_obj, field){
-				var new_elem_obj = elem_obj;
-
-				//lets look for the uri
-				var index_category = util.index_in_arrjsons(search_conf_json.categories,["name"],[table_conf.category]);
-				var index_field = util.index_in_arrjsons(search_conf_json.categories[index_category].fields, ["value"], [field]);
-				var uri = null;
-				if (index_field != -1){
-					var field_obj = search_conf_json.categories[index_category].fields[index_field];
-					var link_obj = field_obj.link;
-
-					if (link_obj != undefined) {
-						if ((link_obj.field != null) && (link_obj.field != "")) {
-							// I have field to link to
-
-							if (elem_obj.hasOwnProperty(link_obj.field)) {
-								uri = elem_obj[link_obj.field].value;
-								if (link_obj.hasOwnProperty("prefix")) {
-									uri = String(link_obj.prefix) + uri;
-								}
-								new_elem_obj[field]["uri"] = uri;
+						var index_field = util.index_in_arrjsons(cat_conf.fields,["value"],[key_field]);
+						if (index_field != -1) {
+							var field_obj = cat_conf.fields[index_field];
+							var my_uri = _get_uri(new_data[i], key_field, field_obj);
+							if (my_uri != null) {
+								new_data[i][key_field]["uri"] = my_uri;
 							}
 						}
 					}
 				}
-				return new_elem_obj;
 			}
+			return new_data;
 		}
+		function _get_uri(elem_obj, field, field_obj){
+				var new_elem_obj = elem_obj;
+				var uri = null;
+				var link_obj = field_obj.link;
+				if (link_obj != undefined) {
+					if ((link_obj.field != null) && (link_obj.field != "")) {
+						// I have field to link to
+						if (elem_obj.hasOwnProperty(link_obj.field)) {
+							uri = elem_obj[link_obj.field].value;
+							if (link_obj.hasOwnProperty("prefix")) {
+								uri = String(link_obj.prefix) + uri;
+							}
+							//new_elem_obj[field]["uri"] = uri;
+						}
+					}
+				}
+				return uri;
+		}
+
 		/*map the fields with their corresponding labels*/
  		function _init_lbls(data){
  			var new_data = data;
@@ -587,7 +655,87 @@ var search = (function () {
  				return new_elem_obj;
  			}
  		}
+		/*retrieve the externa data*/
+		function _exec_ext_data(func_obj, index, async_bool, callbk_func, key_full_name, func_name, data, data_field){
 
+					//my func params
+					var func_param = []
+					var func_param_fields = func_obj['param']['fields'];
+					var func_param_values = func_obj['param']['values'];
+
+					var conf_params = [];
+					for (var j = 0; j < func_param_fields.length; j++) {
+						conf_params.push(undefined);
+					}
+					for (var j = 0; j < func_param_fields.length; j++) {
+						var p_field = func_param_fields[j];
+						if ( p_field == "FREE-TEXT"){
+							conf_params.push(func_param_values[j]);
+						}else {
+							if (data.hasOwnProperty(p_field)) {
+								conf_params.push(data[p_field].value);
+							}
+						}
+					}
+
+					func_param.push(conf_params);
+					func_param.push(index, async_bool, callbk_func, key_full_name, data_field);
+					var res = Reflect.apply(func_name,undefined,func_param);
+		}
+
+		function callbk_update_data_entry_val(index_entry, key_full_name, res_obj, data_field, async_bool){
+			var new_val = util.get_obj_key_val(res_obj,data_field);
+			if (new_val == -1) {
+				new_val = "";
+			}
+
+			if (async_bool) {
+				//init the data
+				var obj = _update_all_data_entry_field(index_entry, key_full_name, new_val);
+				//visualize it in current table page
+				htmldom.update_tab_entry_field(table_conf.data_key, index_entry, key_full_name, obj);
+
+				//check if it should be a filter field
+				if (util.index_in_arrjsons(table_conf.filters.fields, ["value"], [key_full_name]) != -1) {
+					_gen_data_checkboxes();
+				}
+
+			}else {
+				_update_data_type(table_conf.data.results.bindings,index_entry, key_full_name, new_val);
+			}
+			//console.log(table_conf.data.results.bindings);
+			function _update_all_data_entry_field(data_key_val, field, new_val) {
+				var init_obj = {"value": new_val, "label": new_val};
+				init_obj["uri"] = _update_uri(data_key_val,field);
+
+
+				var obj = _update_data_type(table_conf.data.results.bindings,data_key_val, field, init_obj);
+				_update_data_type(table_conf.filters.data.results.bindings,data_key_val, field, init_obj);
+				_update_data_type(table_conf.view.data.results.bindings,data_key_val, field, init_obj);
+				return obj;
+
+				function _update_uri(data_key_val,field) {
+					var field_index = util.index_in_arrjsons(cat_conf.fields,["value"],[field]);
+					if( field_index != -1){
+						var link_obj = cat_conf.fields[field_index].link;
+						if (link_obj != undefined) {
+							var original_data_index = util.index_in_arrjsons(sparql_results.results.bindings,[table_conf.data_key],[data_key_val]);
+							return  _get_uri(sparql_results.results.bindings[original_data_index], field, cat_conf.fields[field_index]);
+						}
+					}
+				}
+			}
+			function _update_data_type(dataset, data_key_val, field, new_obj) {
+				for (var i = 0; i < dataset.length; i++) {
+					if (! util.is_undefined_key(dataset[i],table_conf.data_key)) {
+						if(dataset[i][table_conf.data_key].value == data_key_val){
+							dataset[i][field] = JSON.parse(JSON.stringify(new_obj));
+							return dataset[i];
+						}
+					}
+				}
+			}
+		}
 
 		function _build_header_sec(){
 
@@ -693,7 +841,7 @@ var search = (function () {
 							var checked_filters_arr = null;
 							if (operation == "showonly_exclude") {
 								checked_filters_arr = util.get_sub_arr(table_conf.filters.arr_entries,"checked",true);
-								htmldom.add_filentry_history(checked_filters_arr , params.showonly);
+								htmldom.add_filentry_history(checked_filters_arr , params.showonly, table_conf.filters.fields);
 							}
 							if (operation == "show_all") {
 								htmldom.reset_filter_history_tab();
@@ -800,8 +948,6 @@ var search = (function () {
 			//table_conf.view.data.results.bindings = JSON.parse(JSON.stringify(table_conf.view.data.results.bindings));
 			//_limit_results();
 			if (field != 'none') {
-					//console.log(JSON.parse(JSON.stringify(table_conf.filters.data.results.bindings[0])));
-					//console.log(JSON.parse(JSON.stringify(table_conf.view.data.results.bindings[0])));
 					table_conf.view.data.results.bindings = _sort_tabdata(table_conf.view.data.results.bindings,field,order,val_type);
 			}else {
 				/*no sort operation is applied*/
@@ -820,6 +966,7 @@ var search = (function () {
 							field_val = ".concat-list";
 						}
 				}
+
 				var new_arr_obj = util.sort_objarr_by_key(
 							JSON.parse(JSON.stringify(arr_obj)),
 							order,
@@ -895,12 +1042,12 @@ var search = (function () {
 				return filters_flag;
 			}
 		}
-		function _gen_data_checkboxes(){
+		function _gen_data_checkboxes(myfields = table_conf.filters.fields){
 
-			table_conf.filters.arr_entries = [];
+			//table_conf.filters.arr_entries = [];
 
+			var new_arr_entries = [];
 			// create the list of values I can filter
-			var myfields = table_conf.filters.fields;
 			for (var i = 0; i < myfields.length; i++) {
 
 							var filter_field = myfields[i].value;
@@ -925,7 +1072,16 @@ var search = (function () {
 											var new_label = arr[k].label;
 											var index_in_arr = util.index_in_arrjsons(arr_check_values,["value"],[new_val]);
 											if (index_in_arr == -1){
-												arr_check_values.push({"field": filter_field,"value":new_val,"label":new_label ,"sum":1,"checked":false});
+												//check it according to prev status
+												var checked_bool = false;
+												var index_in_arr_entries = util.index_in_arrjsons(table_conf.filters.arr_entries,["value"],[new_val]);
+												if (index_in_arr_entries != -1) {
+													if (table_conf.filters.arr_entries[index_in_arr_entries]['checked'] == true) {
+													}
+													checked_bool = table_conf.filters.arr_entries[index_in_arr_entries]['checked'];
+												}
+
+												arr_check_values.push({"field": filter_field,"value":new_val,"label":new_label ,"sum":1,"checked":checked_bool});
 											}else{
 												arr_check_values[index_in_arr]["sum"] = arr_check_values[index_in_arr]["sum"] + 1;
 											}
@@ -935,9 +1091,12 @@ var search = (function () {
 
 							//insert them all
 							for (var j = 0; j < arr_check_values.length; j++) {
-								table_conf.filters.arr_entries.push(arr_check_values[j]);
+								new_arr_entries.push(arr_check_values[j]);
 							}
 			}
+
+			//insert them all
+			table_conf.filters.arr_entries = new_arr_entries;
 		}
 		function _export_csv(){
 			var matrix = [];
@@ -960,7 +1119,7 @@ var search = (function () {
 				for (var i = 0; i < tab_results.length; i++) {
 					var row_elem = [];
 					for (var j = 0; j < set_keys.length; j++) {
-						row_elem.push(util.build_str_html(tab_results[i][set_keys[j]],"inline"));
+						row_elem.push(util.build_str(tab_results[i][set_keys[j]],"inline"));
 					}
 					matrix.push(row_elem);
 				}
@@ -1088,7 +1247,10 @@ var search = (function () {
 				//main operations
 				build_table: build_table,
 				do_sparql_query: do_sparql_query,
-				build_adv_sparql_query: build_adv_sparql_query
+				build_adv_sparql_query: build_adv_sparql_query,
+
+				//others
+				callbk_update_data_entry_val: callbk_update_data_entry_val
 		 }
 })();
 
@@ -1282,6 +1444,8 @@ var util = (function () {
 
 		var sorted_arr = [];
 		var array_key = key.split('.');
+		//in case the field name have dots
+		array_key = handle_dots(array_key);
 
 		for (var i = 0; i < objarr.length; i++) {
 			var objval = _init_val(objarr[i], array_key, val_type);
@@ -1360,6 +1524,24 @@ var util = (function () {
 
 			return val;
 		}
+
+	}
+
+	/*handle dots in field name*/
+	function handle_dots(array_key) {
+		var new_arr = [];
+		var field_name = ""; var sep= ".";
+		for (var i = 0; i < array_key.length-1; i++) {
+			if (i == array_key.length-2) {
+				sep= "";
+			}
+			field_name= field_name + array_key[i]+sep;
+		}
+		if (field_name != "") {
+			new_arr.push(field_name);
+		}
+		new_arr.push(array_key[array_key.length-1]);
+		return new_arr;
 	}
 
 	/*sort int function*/
@@ -1370,27 +1552,32 @@ var util = (function () {
 	/*create and return an html string representing the value of obj
 	in case it is a concatanation of values then the string styles
 	follows the 'concat_style' pattern for its construction  */
-	function build_str_html(obj,concat_style=null){
+	function build_str(obj,concat_style=null, include_link = true){
 		if (obj != undefined) {
 			if (obj.hasOwnProperty("concat-list")) {
-				return __concat_vals(obj["concat-list"],concat_style);
+				return __concat_vals(obj["concat-list"],concat_style,include_link);
 			}else {
-				return __get_val(obj);
+				return __get_val(obj,include_link);
 			}
 		}else {
 			return "";
 		}
 
-		function __get_val(obj){
+		function __get_val(obj,include_link){
 			if ((obj != null) && (obj != undefined)){
-				if (obj.value == "") {obj.value = "NONE";}
+				//if (obj.value == "") {obj.value = "NONE";}
 				var str_html = obj.value;
+				if (include_link) {
+					if (obj.hasOwnProperty("uri")) {
+						str_html = "<a href='"+String(obj.uri)+"'>"+obj.value+"</a>";
+					}
+				}
 				return str_html;
 			}else {
 				return "NONE";
 			}
 		}
-		function __concat_vals(arr,concat_style){
+		function __concat_vals(arr,concat_style,include_link){
 			var str_html = "";
 			var separator = ", ";
 
@@ -1408,7 +1595,7 @@ var util = (function () {
 			for (var i = 0; i < arr.length; i++) {
 				var obj = arr[i];
 				if (i == arr.length - 1) {separator = " ";}
-				str_html = str_html + __get_val(obj) + separator;
+				str_html = str_html + __get_val(obj,include_link) + separator;
 			}
 			return str_html;
 		}
@@ -1424,10 +1611,11 @@ var util = (function () {
 		collect_values: collect_values,
 		get_sub_arr: get_sub_arr,
 		sort_objarr_by_key: sort_objarr_by_key,
+		handle_dots: handle_dots,
 		sort_int: sort_int,
 		index_in_arrjsons: index_in_arrjsons,
 		encode_matrix_to_csv: encode_matrix_to_csv,
-		build_str_html: build_str_html
+		build_str: build_str
 	 }
 })();
 
@@ -1478,38 +1666,51 @@ var htmldom = (function () {
 				if (index != -1) {
 
 					var tabCell = tr.insertCell(-1);
-					if (results_obj.hasOwnProperty(f_obj["value"])) {
-						var str_html = "";
+					tabCell.setAttribute("field", f_obj["value"]);
+					var cell_inner = _cell_inner_str(results_obj, f_obj["value"]);
 
-						//check if field is concatenated through group_by
-						if (results_obj[f_obj["value"]].hasOwnProperty("concat-list")) {
-							var arr = results_obj[f_obj["value"]]["concat-list"];
-							var str_sep = ", ";
-							for (var k = 0; k < arr.length; k++) {
-								if (k == arr.length -1) {str_sep = " ";}
-								if(arr[k].hasOwnProperty("uri")){
-									str_html = str_html + "<a class='res-val-link' href='"+String(arr[k].uri)+"' target='_blank'>"+arr[k].value+"</a>";
-								}else {
-									str_html = str_html + String(arr[k].value);
-								}
-								str_html = String(str_html) + String(str_sep);
-							}
-						}
-						else {
-							if(results_obj[f_obj["value"]].hasOwnProperty("uri")){
-								str_html = "<a class='res-val-link' href='"+String(results_obj[f_obj["value"]].uri)+"' target='_blank'>"+results_obj[f_obj["value"]].value+"</a>";
-							}else {
-								str_html = results_obj[f_obj["value"]].value;
-							}
-						}
-					}else{
-						str_html = "";
-					}
-					tabCell.innerHTML = str_html;
+					tabCell.setAttribute("value", cell_inner.str_value);
+					tabCell.innerHTML = cell_inner.str_html;
 				}
 		}
 		return tr;
 	}
+
+	function _cell_inner_str(results_obj,cell_field) {
+		if (results_obj.hasOwnProperty(cell_field)) {
+			var str_html = "";
+
+			//check if field is concatenated through group_by
+			var str_value = "";
+			if (results_obj[cell_field].hasOwnProperty("concat-list")) {
+				var arr = results_obj[cell_field]["concat-list"];
+				var str_sep = ", ";
+				for (var k = 0; k < arr.length; k++) {
+					if (k == arr.length -1) {str_sep = " ";}
+					str_value = str_value + arr[k].value + str_sep;
+					if(arr[k].hasOwnProperty("uri")){
+						str_html = str_html + "<a class='res-val-link' href='"+String(arr[k].uri)+"' target='_blank'>"+arr[k].value+"</a>";
+					}else {
+						str_html = str_html + String(arr[k].value);
+					}
+					str_html = String(str_html) + String(str_sep);
+				}
+			}
+			else {
+				str_value = results_obj[cell_field].value;
+				if(results_obj[cell_field].hasOwnProperty("uri")){
+					str_html = "<a class='res-val-link' href='"+String(results_obj[cell_field].uri)+"' target='_blank'>"+results_obj[cell_field].value+"</a>";
+				}else {
+					str_html = results_obj[cell_field].value;
+				}
+			}
+		}else{
+			str_html = "";
+		}
+		return {"str_html": str_html, "str_value": str_value};
+	}
+
+
 	/*create the footer of the results table*/
 	function _table_footer(no_results_flag, my_tr){
 		var new_footer_tab = document.createElement("table");
@@ -1806,13 +2007,13 @@ var htmldom = (function () {
 			'<fieldset>'+
 			'<div class="adv btn-group" data-toggle="buttons">'+
 				'<label class="btn btn-secondary active">'+
-				'<input name="bc_'+id_rows+'" value="and" type="radio" entryid="'+id_rows+'" class="btn btn-default" checked>And'+
+				'<input name="bc" value="and" type="radio" entryid="'+id_rows+'" class="btn btn-default" checked>And'+
 				'</label>'+
 				'<label class="btn btn-secondary" value="or">'+
-				'<input name="bc_'+id_rows+'" value="or" type="radio" entryid="'+id_rows+'" class="btn btn-default">Or'+
+				'<input name="bc" value="or" type="radio" entryid="'+id_rows+'" class="btn btn-default">Or'+
 				'</label>'+
 				'<label class="btn btn-secondary" value="and_not">'+
-				'<input name="bc_'+id_rows+'" value="and_not" type="radio" entryid="'+id_rows+'" class="btn btn-default">And Not'+
+				'<input name="bc" value="and_not" type="radio" entryid="'+id_rows+'" class="btn btn-default">And Not'+
 				'</label>'+
 			'</div>'+
 			'<div class="adv btn remove">'+
@@ -1882,7 +2083,7 @@ var htmldom = (function () {
 	}
 
 	/*creates and adds an entry filter history to the table*/
-	function add_filentry_history(arr_options=[], filter_type = ""){
+	function add_filentry_history(arr_options=[], filter_type = "", filter_fields_arr = []){
 		if (arr_options.length > 0) {
 			var filter_history_tab = document.getElementById("filter_history_tab");
 
@@ -1896,7 +2097,13 @@ var htmldom = (function () {
 				if (i == arr_options.length-1) {
 					str_span = " ";
 				}
-				str_html = str_html +"<span class='theme-color'>"+arr_options[i].label+" ("+arr_options[i].field+")" +"</span>"+str_span;
+				var str_field = arr_options[i].field;
+				var filter_field_index = util.index_in_arrjsons(filter_fields_arr,["value"],[arr_options[i].field]);
+				if (filter_field_index != -1) {
+					str_field = filter_fields_arr[filter_field_index].title;
+				}
+
+				str_html = str_html +"<span class='theme-color'>"+arr_options[i].label+" ("+str_field+")" +"</span>"+str_span;
 			}
 
 			var tabCell = document.createElement("td");
@@ -1931,13 +2138,16 @@ var htmldom = (function () {
 	function filter_checkboxes(table_conf) {
 		if (filter_values_container != null) {
 
-			// create dynamic table
-			var table = document.createElement("table");
-			table.className = "table filter-values-tab";
+			//array of tables
+			var tab_arr = [];
 
 			// build cells of fields to filter
 			var myfields = table_conf.filters.fields;
 			for (var i = 0; i < myfields.length; i++) {
+
+						var divtab = __create_inner_tab_container(myfields[i].value)
+						var table = divtab.firstChild;
+
 						//insert the header
 						var tr = table.insertRow(-1);
 						var href_string = "javascript:search.select_filter_field('"+String(myfields[i].value)+"');";
@@ -1947,9 +2157,12 @@ var htmldom = (function () {
 						//in case i don't have checkbox values i remove header
 						if (arr_check_values.length == 0) {
 							table.deleteRow(table.rows.length -1);
-						}else {
+						}else
+						{
 							if (myfields[i].dropdown_active == true)
 							{
+									var inner_divtab = __create_inner_tab_container("filter_innervalues");
+
 									arr_check_values = util.sort_objarr_by_key(arr_check_values, myfields[i].config.order, myfields[i].config.sort, myfields[i].config.type_sort);
 									var j_from = table_conf.view.fields_filter_index[myfields[i].value].i_from;
 									var j_to = table_conf.view.fields_filter_index[myfields[i].value].i_to;
@@ -1957,21 +2170,29 @@ var htmldom = (function () {
 
 									for (var j = j_from; j < j_to; j++) {
 										//insert a checkbox entry
-										tr = table.insertRow(-1);
+										tr = inner_divtab.firstChild.insertRow(-1);
 										tr.innerHTML = _checkbox_value(myfields[i],arr_check_values[j]).outerHTML;
 									}
-									tr = table.insertRow(-1);
+									tr = inner_divtab.firstChild.insertRow(-1);
 									tr.innerHTML = _filter_vals_pages_nav(j_from,j_to,arr_check_values.length,myfields[i]).outerHTML;
+
+									tab_arr.push(divtab);
+									tab_arr.push(inner_divtab);
 							}else {
 								//dropdown is closed
 								var tr = table.rows[table.rows.length -1];
 								tr.innerHTML = _field_filter_dropdown(myfields[i], href_string, true).outerHTML;
+
+								tab_arr.push(divtab);
 							}
-						}
+					}
 				}
 
 				filter_values_container.innerHTML = "";
-				filter_values_container.appendChild(table);
+				for (var i = 0; i < tab_arr.length; i++) {
+					filter_values_container.appendChild(tab_arr[i]);
+				}
+				//filter_values_container.appendChild(table);
 
 				__update_checkboxes();
 
@@ -1991,6 +2212,16 @@ var htmldom = (function () {
 							}
 						}
 					}
+				}
+				function __create_inner_tab_container(class_val){
+					// create dynamic table
+					var table = document.createElement("table");
+					table.className = "table filter-values-tab";
+
+					var divtab = document.createElement("div");
+					divtab.className = class_val;
+					divtab.appendChild(table);
+					return divtab;
 				}
 		}
 	}
@@ -2143,6 +2374,38 @@ var htmldom = (function () {
 			}
 	}
 
+	function update_tab_entry_field(table_field_key, entry_data_key, entry_data_field, obj_val){
+
+		var tab_res = document.getElementById("tab_res");
+		var tr_index = _get_index_of_tr(tab_res, table_field_key, entry_data_key);
+
+		if(tr_index != -1){
+			for (var j = 0; j < tab_res.rows[tr_index].cells.length; j++) {
+				var mycell = tab_res.rows[tr_index].cells[j];
+				if (mycell.getAttribute("field") == entry_data_field) {
+					var cell_inner = _cell_inner_str(obj_val, entry_data_field);
+					mycell.setAttribute("value", cell_inner.str_value);
+					mycell.innerHTML = cell_inner.str_html;
+				}
+			}
+		}
+
+		function _get_index_of_tr(tab_res, table_field_key, entry_data_key){
+			for (var i = 0; i < tab_res.rows.length; i++) {
+				for (var j = 0; j < tab_res.rows[i].cells.length; j++) {
+					var mycell = tab_res.rows[i].cells[j];
+					if (mycell.getAttribute("field") == table_field_key) {
+						if (mycell.getAttribute("value") == entry_data_key) {
+							return i;
+						}
+					}
+				}
+			}
+			return -1;
+		}
+
+	}
+
 	/*disable/enable the filter buttons: Show-only, Exclude */
 	function disable_filter_btns(flag) {
 		var show_only_btn = document.getElementById("show-only");
@@ -2227,6 +2490,7 @@ var htmldom = (function () {
 		filter_history_tab: filter_history_tab,
 		reset_filter_history_tab: reset_filter_history_tab,
 		update_res_table: update_res_table,
+		update_tab_entry_field: update_tab_entry_field,
 		disable_filter_btns:disable_filter_btns,
 		loader: loader,
 		build_export_btn: build_export_btn,

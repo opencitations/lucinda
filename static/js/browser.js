@@ -2,8 +2,11 @@
 var browser = (function () {
 
 		var resource = null;
+		var resource_res = null;
 		var browser_conf_json = {};
 		var oscar_data = {};
+		var pending_oscar_calls = 0;
+		var oscar_content = null;
 		var ext_data = {};
 
 		/*it's a document or an author*/
@@ -59,7 +62,7 @@ var browser = (function () {
 				//since its a resource iri we put it between < >
 				var global_r = new RegExp("<VAR>", "g");
 				sparql_query = sparql_query.replace(global_r, "<"+resource+">");
-				console.log(sparql_query);
+				//console.log(sparql_query);
 
 				//use this url to contact the sparql_endpoint triple store
 				var query_contact_tp =  String(browser_conf_json.sparql_endpoint)+"?query="+ encodeURIComponent(sparql_query) +"&format=json";
@@ -127,16 +130,36 @@ var browser = (function () {
 			var data_grouped = b_util.group_by(data_with_links, group_by);
 			var one_result = data_grouped[0];
 			one_result = b_util.text_mapping(one_result, text_mapping);
+			resource_res = JSON.parse(JSON.stringify(one_result));
 			_exec_ext_data(one_result, ext_data_obj);
 			//console.log(ext_data);
 			//console.log(JSON.parse(JSON.stringify(data_grouped)));
 
 			var contents = browser_conf_json.categories[category]["contents"];
-			var dom_sections = b_htmldom.build_body(one_result,contents );
+			oscar_content = contents["oscar"];
+
+			b_htmldom.build_body(one_result,contents );
+
+			_execute_oscar(one_result,contents);
+
+			//b_htmldom.build_oscar(one_result,contents );
+
 			//console.log(document.getElementById("browser"));
 
 			//search.do_sparql_query("search?text="+one_result[oscar_tab["query_text"]].value+"&rule="+oscar_tab["rule"], config_mod);
 
+
+		}
+
+		function _execute_oscar(one_result,contents) {
+			var oscar_content = contents['oscar'];
+			if (oscar_content != undefined) {
+				pending_oscar_calls = oscar_content.length;
+				for (var i = 0; i < oscar_content.length; i++) {
+					var oscar_entry = oscar_content[i];
+					call_oscar(one_result[oscar_entry.query_text].value, oscar_entry["rule"]);
+				}
+			}
 		}
 
 		function get_ext_data() {
@@ -230,27 +253,47 @@ var browser = (function () {
 			return new_data;
 		}
 
-		function call_oscar(query,rule,a_elem_id){
+		function call_oscar(query,rule){
 				var oscar_key = 'search?text='+query+'&rule='+rule;
+
 				if (!(oscar_key in oscar_data)) {
 					var config_mod = [
 							{"key":"progress_loader.title" ,"value":"Searching ..."},
 							{"key":"progress_loader.subtitle" ,"value":""},
 							{"key":"progress_loader.abort.title" ,"value":""}
 					];
-					var results = search.do_sparql_query(oscar_key, config_mod, true, browser.assign_oscar_results);
+					search.do_sparql_query(oscar_key, config_mod, true, browser.assign_oscar_results);
 				}else {
 					//don't call again sparql
-					//console.log(oscar_data[oscar_key]);
 					search.build_table(oscar_data[oscar_key]);
 				}
-
-				b_htmldom.handle_menu(a_elem_id);
-				//console.log(oscar_data);
 		}
 
-		function assign_oscar_results(oscar_key,results){
-			oscar_data[oscar_key] = results;
+		function assign_oscar_results(oscar_key, results){
+
+			pending_oscar_calls = pending_oscar_calls - 1;
+
+			if (results.results.bindings.length == 0) {
+				//get rule key from regex
+				var rule_key = "";
+				reg = /rule=(.+?)(?=&bc|$)/g;
+				if (match = reg.exec(oscar_key)) {
+					rule_key = match[1];
+				}
+
+				var index_oscar_obj = b_util.index_in_arrjsons(oscar_content,["rule"],[rule_key]);
+				if (index_oscar_obj != -1) {
+					oscar_content.splice(index_oscar_obj, 1);
+				}
+			}else {
+				oscar_data[oscar_key] = results;
+			}
+
+			if (pending_oscar_calls == 0) {
+				//console.log(oscar_data, oscar_content);
+				//build oscar menu
+				b_htmldom.build_oscar(resource_res, {"oscar": oscar_content});
+			}
 		}
 
 		return {
@@ -482,6 +525,7 @@ var b_util = (function () {
 	}
 
 	return {
+		index_in_arrjsons: index_in_arrjsons,
 		get_obj_key_val: get_obj_key_val,
 		text_mapping: text_mapping,
 		get_sub_obj: get_sub_obj,
@@ -667,11 +711,16 @@ var b_htmldom = (function () {
 			if (metrics_container != null) {
 				metrics_container.innerHTML = _build_section(data_obj, contents, "browser-metrics-tab", "metrics").outerHTML;
 			}
-			if (oscar_container != null) {
-				_build_oscar_menu(data_obj, contents);
-			}
 			return {"header": header_container, "details": details_container, "metrics": metrics_container};
 		}
+	}
+
+	function build_oscar(data_obj, contents) {
+		if (oscar_container != null) {
+			_build_oscar_menu(data_obj, contents);
+			return true;
+		}
+		return false;
 	}
 
 	/*call this in case i want to build extra with ad-hoc data created*/
@@ -702,6 +751,7 @@ var b_htmldom = (function () {
 				oscar_container.parentNode.insertBefore(dom_nav, oscar_container);
 				//enable_oscar_menu(false);
 
+				//click first elem of OSCAR menu
 				menu_obj.active_li.click();
 			}
 		}
@@ -714,7 +764,8 @@ var b_htmldom = (function () {
 				var a_elem = document.createElement("a");
 				var query = data_obj[oscar_obj.query_text].value;
 				var rule = oscar_obj.rule;
-				a_elem.href = "javascript:browser.call_oscar('"+query+"','"+rule+"','"+"oscar_menu_"+i+"')";
+
+				a_elem.href = "javascript:browser.call_oscar('"+query+"','"+rule+"')";
 				a_elem.innerHTML = oscar_obj["label"];
 				var is_active = "";
 				if (i == 0) {
@@ -758,6 +809,7 @@ var b_htmldom = (function () {
 		enable_oscar_menu: enable_oscar_menu,
 		build_extra_comp: build_extra_comp,
 		build_extra: build_extra,
-		build_body: build_body
+		build_body: build_body,
+		build_oscar: build_oscar
 	}
 })();
