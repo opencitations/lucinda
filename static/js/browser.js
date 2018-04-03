@@ -258,7 +258,8 @@ var browser = (function () {
 
 				if (!(oscar_key in oscar_data)) {
 					var config_mod = [
-							{"key":"progress_loader.title" ,"value":"Searching ..."},
+							//{"key":"progress_loader.title" ,"value":"Searching ..."},
+							{"key":"progress_loader.title" ,"value":""},
 							{"key":"progress_loader.subtitle" ,"value":""},
 							{"key":"progress_loader.abort.title" ,"value":""}
 					];
