@@ -259,6 +259,7 @@ var browser = (function () {
 				if (!(oscar_key in oscar_data)) {
 					var config_mod = [
 							//{"key":"progress_loader.title" ,"value":"Searching ..."},
+							{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
 							{"key":"progress_loader.visible" ,"value":false}
 					];
 					search.do_sparql_query(oscar_key, config_mod, true, browser.assign_oscar_results);
