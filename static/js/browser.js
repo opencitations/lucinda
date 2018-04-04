@@ -491,7 +491,7 @@ var b_util = (function () {
 				var str_html = obj.value;
 				if (include_link) {
 					if (obj.hasOwnProperty("uri")) {
-						str_html = "<a href='"+String(obj.uri)+"'>"+obj.value+"</a>";
+						str_html = "<a href='"+String(obj.uri)+"' target='_blank'>"+obj.value+"</a>";
 					}
 				}
 				return str_html;
