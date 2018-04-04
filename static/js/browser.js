@@ -253,8 +253,12 @@ var browser = (function () {
 			return new_data;
 		}
 
-		function call_oscar(query,rule, config_mod = []){
+		function call_oscar(query,rule, config_mod = [], li_id = null){
 				var oscar_key = 'search?text='+query+'&rule='+rule;
+
+				if (li_id != null) {
+					b_htmldom.update_oscar_li(oscar_content,li_id);
+				}
 
 				if (!(oscar_key in oscar_data)) {
 					search.do_sparql_query(oscar_key, config_mod, true, browser.assign_oscar_results);
@@ -751,7 +755,7 @@ var b_htmldom = (function () {
 				menu_obj.active_li.dispatchEvent(new MouseEvent(`click`, {bubbles: true, cancelable: true, view: window}));
 			}
 		}
-		function _build_menu(oscar_content, data_obj, config_mod){
+		function _build_menu(oscar_content, data_obj, config_mod, def_menu_index = 0){
 			var str_lis = "";
 			var active_elem = null;
 			for (var i = 0; i < oscar_content.length; i++) {
@@ -761,10 +765,10 @@ var b_htmldom = (function () {
 				var query = data_obj[oscar_obj.query_text].value;
 				var rule = oscar_obj.rule;
 
-				a_elem.href = "javascript:browser.call_oscar('"+query+"','"+rule+"')";
+				a_elem.href = "javascript:browser.call_oscar('"+query+"','"+rule+"','"+[]+"','"+i+"')";
 				a_elem.innerHTML = oscar_obj["label"];
 				var is_active = "";
-				if (i == 0) {
+				if (i == def_menu_index) {
 					is_active = "active";
 					active_elem = a_elem;
 				}
@@ -775,11 +779,21 @@ var b_htmldom = (function () {
 		}
 	}
 
+	function update_oscar_li(oscar_content, li_id) {
+		for (var i = 0; i < oscar_content.length; i++) {
+			if (i == li_id) {
+				document.getElementById("oscar_menu_"+i).className = "active";
+			}else {
+				document.getElementById("oscar_menu_"+i).className = "";
+			}
+		}
+	}
+
 	function handle_menu(a_elem_id){
 		//console.log(a_elem_id);
 		var arr_li = document.getElementById("oscar_nav").getElementsByTagName("li");
 
-		//console.log(arr_li);
+		console.log(arr_li);
 
 		for (var i = 0; i < arr_li.length; i++) {
 			var my_li = arr_li[i];
@@ -806,6 +820,7 @@ var b_htmldom = (function () {
 		build_extra_comp: build_extra_comp,
 		build_extra: build_extra,
 		build_body: build_body,
-		build_oscar: build_oscar
+		build_oscar: build_oscar,
+		update_oscar_li: update_oscar_li
 	}
 })();
