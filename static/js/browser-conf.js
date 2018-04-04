@@ -96,9 +96,30 @@ var browser_conf = {
               {"classes":["10px"]},
               {"fields": ["FREE-TEXT","out_cits","FREE-TEXT"], "values": ["Cites ",null," documents"], "classes": ["metric-entry","imp-value","metric-entry"], "respects":[[],[more_than_zero],[]]}
             ],
+
             "oscar": [
-              {"query_text": "my_iri", "rule": "doc_cites_list", "label":"References"},
-              {"query_text": "my_iri", "rule": "doc_cites_me_list", "label":"Citations"}
+              {
+                "query_text": "my_iri",
+                "rule": "doc_cites_list",
+                "label":"References",
+                "config_mod" : [
+      							{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
+      							{"key":"page_limit_def" ,"value":30},
+      							{"key":"categories.[[name,document]].fields.[[title,Cited by]].sort.default" ,"value":{"order": "desc"}},
+      							{"key":"progress_loader.visible" ,"value":false}
+      					]
+              },
+              {
+                "query_text": "my_iri",
+                "rule": "doc_cites_me_list",
+                "label":"Citations",
+                "config_mod" : [
+      							{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
+      							{"key":"page_limit_def" ,"value":20},
+      							{"key":"categories.[[name,document]].fields.[[title,Cited by]].sort.default" ,"value":{"order": "desc"}},
+      							{"key":"progress_loader.visible" ,"value":false}
+      					]
+              }
             ]
           }
           /*,
@@ -166,7 +187,17 @@ var browser_conf = {
                 //{"fields": ["FREE-TEXT","in_cits_docs","FREE-TEXT"], "values": ["\xa0\xa0\xa0 by ",null," different documents"], "classes": ["metric-entry","imp-value","metric-entry"]}
             ],
             "oscar": [
-              {"query_text": "author_iri", "rule": "author_works", "label":"Author's documents"}
+              {
+                "query_text": "author_iri",
+                "rule": "author_works",
+                "label":"Author's documents",
+                "config_mod" : [
+      							{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
+      							{"key":"page_limit_def" ,"value":20},
+      							{"key":"categories.[[name,document]].fields.[[title,Year]].sort.default" ,"value":{"order": "desc"}},
+      							{"key":"progress_loader.visible" ,"value":false}
+      					]
+              }
             ]
           }
         }

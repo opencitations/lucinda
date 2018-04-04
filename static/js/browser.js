@@ -157,7 +157,7 @@ var browser = (function () {
 				pending_oscar_calls = oscar_content.length;
 				for (var i = 0; i < oscar_content.length; i++) {
 					var oscar_entry = oscar_content[i];
-					call_oscar(one_result[oscar_entry.query_text].value, oscar_entry["rule"]);
+					call_oscar(one_result[oscar_entry.query_text].value, oscar_entry["rule"], oscar_entry["config_mod"]);
 				}
 			}
 		}
@@ -253,15 +253,10 @@ var browser = (function () {
 			return new_data;
 		}
 
-		function call_oscar(query,rule){
+		function call_oscar(query,rule, config_mod = []){
 				var oscar_key = 'search?text='+query+'&rule='+rule;
 
 				if (!(oscar_key in oscar_data)) {
-					var config_mod = [
-							//{"key":"progress_loader.title" ,"value":"Searching ..."},
-							{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
-							{"key":"progress_loader.visible" ,"value":false}
-					];
 					search.do_sparql_query(oscar_key, config_mod, true, browser.assign_oscar_results);
 				}else {
 					//don't call again sparql
@@ -568,7 +563,7 @@ var b_htmldom = (function () {
 					var elem_dom = document.createElement("elem");
 
 					var key = content_entry.fields[i];
-					var inner_text = "NONE"
+					var inner_text = "unknown"
 					if (obj_vals.hasOwnProperty(key)) {
 						if (! b_util.is_undefined_key(content_entry,"concat_style."+String(key))) {
 								inner_text = b_util.build_str(key, obj_vals[key],content_entry.concat_style[key]);
