@@ -747,7 +747,8 @@ var b_htmldom = (function () {
 				//enable_oscar_menu(false);
 
 				//click first elem of OSCAR menu
-				menu_obj.active_li.click();
+				//menu_obj.active_li.click();
+				menu_obj.active_li.dispatchEvent(new MouseEvent(`click`, {bubbles: true, cancelable: true, view: window}));
 			}
 		}
 		function _build_menu(oscar_content, data_obj, config_mod){

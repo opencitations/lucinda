@@ -115,7 +115,7 @@ var browser_conf = {
                 "label":"Citations",
                 "config_mod" : [
       							{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
-      							{"key":"page_limit_def" ,"value":20},
+      							{"key":"page_limit_def" ,"value":30},
       							{"key":"categories.[[name,document]].fields.[[title,Cited by]].sort.default" ,"value":{"order": "desc"}},
       							{"key":"progress_loader.visible" ,"value":false}
       					]
