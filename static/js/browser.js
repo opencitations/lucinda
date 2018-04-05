@@ -7,6 +7,7 @@ var browser = (function () {
 		var oscar_data = {};
 		var pending_oscar_calls = 0;
 		var oscar_content = null;
+		var current_oscar_tab = null;
 		var ext_data = {};
 
 		/*it's a document or an author*/
@@ -155,6 +156,18 @@ var browser = (function () {
 			var oscar_content = contents['oscar'];
 			if (oscar_content != undefined) {
 				pending_oscar_calls = oscar_content.length;
+
+				for (var i = 0; i < oscar_content.length; i++) {
+					var oscar_entry = oscar_content[i];
+					var query = one_result[oscar_entry.query_text].value;
+					var rule = oscar_entry["rule"];
+					var oscar_key = 'search?text='+query+'&rule='+rule;
+
+					oscar_data[oscar_key] = {};
+					oscar_data[oscar_key]["data"] = search.get_search_data(true, oscar_entry["config_mod"]);
+					//console.log(JSON.parse(JSON.stringify(oscar_data)));
+				}
+
 				for (var i = 0; i < oscar_content.length; i++) {
 					var oscar_entry = oscar_content[i];
 					call_oscar(one_result[oscar_entry.query_text].value, oscar_entry["rule"], oscar_entry["config_mod"]);
@@ -260,12 +273,22 @@ var browser = (function () {
 					b_htmldom.update_oscar_li(oscar_content,li_id);
 				}
 
-				if (!(oscar_key in oscar_data)) {
-					search.do_sparql_query(oscar_key, config_mod, true, browser.assign_oscar_results);
+				if (!("results" in oscar_data[oscar_key])) {
+					search.do_sparql_query(oscar_key, null ,[], true, browser.assign_oscar_results);
 				}else {
-					//don't call again sparql
-					search.build_table(oscar_data[oscar_key]);
+					//in case the table data has not been yet initialized
+					console.log(oscar_data[oscar_key]);
+					if (oscar_data[oscar_key].data.table_conf.data == null) {
+						 //search.change_search_data(oscar_data[oscar_key].data);
+						 oscar_data[oscar_key]["data"] = search.build_table(oscar_data[oscar_key].results);
+					}else {
+						// save current state of oscar
+						oscar_data[current_oscar_tab].data = search.get_search_data();
+						// load new oscar data
+						search.change_search_data(oscar_data[oscar_key].data);
+					}
 				}
+				current_oscar_tab = oscar_key;
 		}
 
 		function assign_oscar_results(oscar_key, results){
@@ -282,14 +305,16 @@ var browser = (function () {
 
 				var index_oscar_obj = b_util.index_in_arrjsons(oscar_content,["rule"],[rule_key]);
 				if (index_oscar_obj != -1) {
+					//comment this to add oscar menu element in any case
 					oscar_content.splice(index_oscar_obj, 1);
 				}
 			}else {
-				oscar_data[oscar_key] = results;
+				oscar_data[oscar_key]["results"] = results;
 			}
+			//decomment this to add oscar menu element in any case
+			//oscar_data[oscar_key]["results"] = results;
 
 			if (pending_oscar_calls == 0) {
-				//console.log(oscar_data, oscar_content);
 				//build oscar menu
 				b_htmldom.build_oscar(resource_res, {"oscar": oscar_content});
 			}

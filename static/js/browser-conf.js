@@ -103,7 +103,7 @@ var browser_conf = {
                 "rule": "doc_cites_list",
                 "label":"References",
                 "config_mod" : [
-      							{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
+      							//{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
       							{"key":"page_limit_def" ,"value":30},
       							{"key":"categories.[[name,document]].fields.[[title,Cited by]].sort.default" ,"value":{"order": "desc"}},
       							{"key":"progress_loader.visible" ,"value":false}
@@ -114,9 +114,10 @@ var browser_conf = {
                 "rule": "doc_cites_me_list",
                 "label":"Citations",
                 "config_mod" : [
-      							{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
+      							//{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
       							{"key":"page_limit_def" ,"value":30},
-      							{"key":"categories.[[name,document]].fields.[[title,Cited by]].sort.default" ,"value":{"order": "desc"}},
+                    //{"key":"categories.[[name,document]].fields.[[title,Cited by]].sort.default" ,"value":"REMOVE_ENTRY"},
+      							{"key":"categories.[[name,document]].fields.[[title,Year]].sort.default" ,"value":{"order": "asc"}},
       							{"key":"progress_loader.visible" ,"value":false}
       					]
               }
