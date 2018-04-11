@@ -21,7 +21,7 @@ var browser_conf = {
           "rule": "br\/.*",
           "query": [
             "SELECT ?my_iri ?short_iri ?id_lit ?type ?short_type ?label ?title ?subtitle ?year ?author_iri ?author_browser_iri ?author (COUNT(distinct ?cites) AS ?out_cits) (COUNT(distinct ?cited_by) AS ?in_cits) WHERE {",
-                 "BIND(<VAR> as ?my_iri) .",
+                 "BIND(<https://w3id.org/oc/corpus/[[VAR]]> as ?my_iri) .",
                  "?my_iri rdfs:label ?label .",
                  "?my_iri rdf:type ?type .",
                  "BIND(REPLACE(STR(?my_iri), 'https://w3id.org/oc/corpus', '', 'i') as ?short_iri) .",
@@ -133,7 +133,7 @@ var browser_conf = {
           "rule": "ra\/.*",
           "query": [
             "SELECT ?label ?orcid ?author_iri ?short_iri ?author (COUNT(distinct ?doc) AS ?num_docs) (COUNT(distinct ?cites) AS ?out_cits) (COUNT(distinct ?cited_by) AS ?in_cits_docs) (COUNT(?cited_by) AS ?in_cits_tot) WHERE {",
-    	         "BIND(<VAR> as ?author_iri) .",
+    	         "BIND(<https://w3id.org/oc/corpus/[[VAR]]> as ?author_iri) .",
                "BIND(REPLACE(STR(?author_iri), 'https://w3id.org/oc/corpus', '', 'i') as ?short_iri) .",
                "?author_iri rdfs:label ?label .",
     	         "?author_iri foaf:familyName ?fname .",

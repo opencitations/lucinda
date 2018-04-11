@@ -51,18 +51,19 @@ var browser = (function () {
 
 			if (resource_iri != "") {
 
-				resource = "https://w3id.org/oc"+"/corpus/"+resource_iri;
+				//resource = "https://w3id.org/oc"+"/corpus/"+resource_iri;
 
 				//initialize and get the browser_config_json
 				browser_conf_json = browser_conf;
 
-				var category = _get_category(resource);
+				var category = _get_category(resource_iri);
 
 				//build the sparql query in turtle format
 				var sparql_query = _build_turtle_prefixes() + _build_turtle_query(browser_conf_json.categories[category].query);
 				//since its a resource iri we put it between < >
-				var global_r = new RegExp("<VAR>", "g");
-				sparql_query = sparql_query.replace(global_r, "<"+resource+">");
+				//var global_r = new RegExp("[[VAR]]", "g");
+				//sparql_query = sparql_query.replace(global_r, resource_iri);
+				sparql_query = sparql_query.replace(/\[\[VAR\]\]/g, resource_iri);
 				//console.log(sparql_query);
 
 				//use this url to contact the sparql_endpoint triple store

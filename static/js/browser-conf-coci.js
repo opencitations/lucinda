@@ -21,7 +21,7 @@ var browser_conf = {
           "query": [
             "SELECT DISTINCT ?iri ?short_iri ?shorter_coci ?citing_doi ?citing_doi_iri ?cited_doi ?cited_doi_iri ?creationdate ?timespan",
                 "WHERE  {",
-                  "BIND(<VAR> as ?iri) .",
+                  "BIND(<https://w3id.org/oc/index/coci/[[VAR]]> as ?iri) .",
                   "OPTIONAL {",
                     "BIND(REPLACE(STR(?iri), 'https://w3id.org/oc/index/coci/ci/', '', 'i') as ?short_iri) .",
                     "?iri cito:hasCitingEntity ?citing_doi_iri .",
@@ -47,7 +47,7 @@ var browser_conf = {
 
           "contents": {
             //define this
-            "extra": {
+            /*"extra": {
                 "browser_view_switch":{
                     "labels":["ldd","Browser"],
                     "values":["short_iri","short_iri"],
@@ -55,7 +55,7 @@ var browser_conf = {
                     "query":[["SELECT ?resource WHERE {BIND(<https://w3id.org/oc/corpus[[VAR]]> as ?resource)}"],["SELECT ?resource WHERE {BIND(<https://w3id.org/oc/corpus[[VAR]]> as ?resource)}"]],
                     "links":["https://w3id.org/oc/corpus[[VAR]]","https://w3id.org/oc/browser[[VAR]]"]
                 }
-            },
+            },*/
             "header": [
                 {"classes":["40px"]},
                 {"fields": ["citing_doi","FREE-TEXT","cited_doi"], "values":[null," cites ", null], "classes":["header-title","metric-entry","header-title"]},
@@ -68,9 +68,16 @@ var browser_conf = {
               {"fields": ["FREE-TEXT","short_iri"], "values":["COCI ID: ", null] },
               {"fields": ["FREE-TEXT","creationdate"], "values":["Creation date: ", null] },
               //{"fields": ["FREE-TEXT","short_type"], "values":["Document type: ",null], "concat_style":{"short_type": "last"} }
-              /*{"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Publisher: ", "crossref4doi.message.publisher"]}*/
+              {"classes":["10px"]},
+              {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Citing reference: ", "call_crossref_4citation_citing"], "classes": ["font-weight-bold",""]},
+              {"classes":["8px"]},
+              {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Cited reference: ", "call_crossref_4citation_cited"], "classes": ["font-weight-bold",""]}
             ],
             "metrics": [
+              {"classes":["30px"]},
+              {"fields": ["FREE-TEXT"], "values": ["Metrics"], "classes": ["metrics-title"]},
+              {"classes":["15px"]},
+              {"fields": ["FREE-TEXT","timespan","FREE-TEXT"], "values": ["The timespan is ",null,""], "classes": ["metric-entry","imp-value",""]}
             ],
 
             "oscar": [
@@ -98,11 +105,11 @@ var browser_conf = {
       					]
               }*/
             ]
-          }
-          /*,
+          },
           "ext_data": {
-            "crossref4doi": {"name": call_crossref, "param": {"fields":["id_lit","FREE-TEXT"],"values":[null,1]}}
-          },*/
+            "call_crossref_4citation_citing": {"name": call_crossref_4citation, "param": {"fields":["citing_doi"],"values":[null]}},
+            "call_crossref_4citation_cited": {"name": call_crossref_4citation, "param": {"fields":["cited_doi"],"values":[null]}}
+          }
     }
   }
 }
@@ -130,7 +137,25 @@ function call_crossref(str_doi, field){
    });
    return result_data;
 }
+function call_crossref_4citation(str_doi){
+  var call_crossref_api = "https://citation.crosscite.org/format?doi=";
+  var suffix = "&style=apa&lang=en-US";
+  var result = "";
 
+  if (str_doi != undefined) {
+    var call_url =  call_crossref_api+str_doi+suffix;
+    //var result_data = "...";
+    $.ajax({
+          url: call_url,
+          type: 'GET',
+          async: false,
+          success: function( res ) {
+            result = res;
+          }
+     });
+  }
+  return result;
+}
 
 //Heuristics
 function more_than_zero(val){
