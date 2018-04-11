@@ -431,6 +431,9 @@ var b_util = (function () {
 	/*group by the 'arr_objs' with distinct 'keys' and by concatinating
 	the fields in 'arr_fields_concat'*/
 	function group_by(arr_objs, params){
+		if ((params == null) || (params == undefined)) {
+			return arr_objs;
+		}
 		var keys = params.keys;
 		var arr_fields_concat = params.concats;
 
