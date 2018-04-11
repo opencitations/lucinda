@@ -38,12 +38,11 @@ var browser_conf = {
           },
           //"none_values": {"subtitle": "", "author": "No authors", "title": "Document without title"},
 
-          //"text_mapping": {
-          //    "short_type":[
-          //        {"regex": /Expression/g, "value":"Document"},
-          //        {"regex": /([a-z])([A-Z])/g, "value":"$1 $2"}
-          //    ]
-          //},
+          "text_mapping": {
+              "citing_doi":[
+                  {"func": [decodeURIStr]}
+              ]
+          },
 
           "contents": {
             //define this
@@ -65,13 +64,13 @@ var browser_conf = {
             ],
             "details": [
               {"classes":["20px"]},
-              {"fields": ["FREE-TEXT","short_iri"], "values":["COCI ID: ", null] },
+              {"fields": ["FREE-TEXT","short_iri"], "values":["OCI : ", null] },
               {"fields": ["FREE-TEXT","creationdate"], "values":["Creation date: ", null] },
               //{"fields": ["FREE-TEXT","short_type"], "values":["Document type: ",null], "concat_style":{"short_type": "last"} }
               {"classes":["10px"]},
-              {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Citing reference: ", "call_crossref_4citation_citing"], "classes": ["font-weight-bold",""]},
+              {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Citing entity: ", "call_crossref_4citation_citing"], "classes": ["font-weight-bold",""]},
               {"classes":["8px"]},
-              {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Cited reference: ", "call_crossref_4citation_cited"], "classes": ["font-weight-bold",""]}
+              {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Cited entity: ", "call_crossref_4citation_cited"], "classes": ["font-weight-bold",""]}
             ],
             "metrics": [
               {"classes":["30px"]},
@@ -155,6 +154,9 @@ function call_crossref_4citation(str_doi){
      });
   }
   return result;
+}
+function decodeURIStr(str) {
+  return decodeURIComponent(str);
 }
 
 //Heuristics

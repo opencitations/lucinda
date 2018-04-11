@@ -366,17 +366,36 @@ var b_util = (function () {
 					for (var j = 0; j < arr_vals.length; j++) {
 						for (var i = 0; i < conf_obj[key_field].length; i++) {
 							var rule_entry = conf_obj[key_field][i];
+
+							var new_val = arr_vals[j].value;
 							if (rule_entry.hasOwnProperty("regex")) {
-								var new_val = arr_vals[j].value.replace(rule_entry.regex,rule_entry.value);
-								arr_vals[j].value = new_val;
+								new_val = new_val.replace(rule_entry.regex,rule_entry.value);
 							}
+
+							if (rule_entry.hasOwnProperty("func")) {
+								new_val = _func_map(new_val, rule_entry.func);
+							}
+
+							arr_vals[j].value = new_val;
 						}
 					}
 				}
 			}
 		}
 		return obj;
+
+		function _func_map(val, func_arr) {
+			  var result = val;
+				for (var k = 0; k < func_arr.length; k++) {
+					var fname = func_arr[k];
+					result = Reflect.apply(fname,undefined,[result]);
+				}
+				return result;
+			}
+
+ 		return new_data;
 	}
+
 
 		/**
 	 * Returns true if key is not a key in object or object[key] has
