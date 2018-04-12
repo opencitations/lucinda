@@ -358,11 +358,11 @@ var b_util = (function () {
 			for (var key_field in obj) {
 				if (conf_obj.hasOwnProperty(key_field)) {
 
-					var arr_vals = obj[key_field].value;
+					var arr_vals = [obj[key_field]];
 					if (obj[key_field].hasOwnProperty("concat-list")) {
 						arr_vals = obj[key_field]["concat-list"];
 					}
-
+					
 					for (var j = 0; j < arr_vals.length; j++) {
 						for (var i = 0; i < conf_obj[key_field].length; i++) {
 							var rule_entry = conf_obj[key_field][i];

@@ -1,5 +1,5 @@
 var browser_conf = {
-  "sparql_endpoint": "http://localhost:8080/sparql/coci",
+  "sparql_endpoint": "http://localhost:8080/index/coci/sparql",
 
   "prefixes": [
       {"prefix":"cito","iri":"http://purl.org/spar/cito/"},
@@ -41,6 +41,12 @@ var browser_conf = {
           "text_mapping": {
               "citing_doi":[
                   {"func": [decodeURIStr]}
+              ],
+              "cited_doi":[
+                  {"func": [decodeURIStr]}
+              ],
+              "timespan":[
+                  {"func": [timespan_translate]}
               ]
           },
 
@@ -57,9 +63,13 @@ var browser_conf = {
             },*/
             "header": [
                 {"classes":["40px"]},
-                {"fields": ["citing_doi","FREE-TEXT","cited_doi"], "values":[null," cites ", null], "classes":["header-title","metric-entry","header-title"]},
+                {"fields": ["citing_doi","FREE-TEXT","cited_doi"], "values":[null," cites ", null], "classes":["header-title text-success","metric-entry text-capitalize mark","header-title text-danger"]},
                 //{"fields": ["subtitle"], "classes":["sub-header-title"]},
                 {"classes":["10px"]},
+                {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Citing entity: ", "call_crossref_4citation_citing"], "classes": ["subtitle","text-success"]},
+                {"classes":["8px"]},
+                {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Cited entity: ", "call_crossref_4citation_cited"], "classes": ["subtitle","text-danger"]}
+
                 //{"fields": ["author"], "concat_style":{"author": "inline"}}
             ],
             "details": [
@@ -67,10 +77,6 @@ var browser_conf = {
               {"fields": ["FREE-TEXT","short_iri"], "values":["OCI : ", null] },
               {"fields": ["FREE-TEXT","creationdate"], "values":["Creation date: ", null] },
               //{"fields": ["FREE-TEXT","short_type"], "values":["Document type: ",null], "concat_style":{"short_type": "last"} }
-              {"classes":["10px"]},
-              {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Citing entity: ", "call_crossref_4citation_citing"], "classes": ["font-weight-bold",""]},
-              {"classes":["8px"]},
-              {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Cited entity: ", "call_crossref_4citation_cited"], "classes": ["font-weight-bold",""]}
             ],
             "metrics": [
               {"classes":["30px"]},
@@ -157,6 +163,39 @@ function call_crossref_4citation(str_doi){
 }
 function decodeURIStr(str) {
   return decodeURIComponent(str);
+}
+function timespan_translate(str) {
+  var new_str = "";
+  var years = 0;
+  var months = 0;
+  var days = 0;
+
+  let reg = /(\d{1,})Y/g;
+  let match;
+  while (match = reg.exec(str)) {
+    if (match.length >= 2) {
+      years = match[1] ;
+      new_str = new_str + years +" Years "
+    }
+  }
+
+  reg = /(\d{1,})M/g;
+  while (match = reg.exec(str)) {
+    if (match.length >= 2) {
+      months = match[1] ;
+      new_str = new_str + months +" Months "
+    }
+  }
+
+  reg = /(\d{1,})D/g;
+  while (match = reg.exec(str)) {
+    if (match.length >= 2) {
+      days = match[1] ;
+      new_str = new_str + days +" Days "
+    }
+  }
+
+  return new_str;
 }
 
 //Heuristics
