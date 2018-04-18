@@ -174,24 +174,36 @@ function timespan_translate(str) {
   let match;
   while (match = reg.exec(str)) {
     if (match.length >= 2) {
-      years = match[1] ;
-      new_str = new_str + years +" Years "
+      years = parseInt(match[1]);
+      var suffix = " Years ";
+      if (years == 1) {
+        suffix = " Year ";
+      }
+      new_str = new_str + String(years) +suffix;
     }
   }
 
   reg = /(\d{1,})M/g;
   while (match = reg.exec(str)) {
     if (match.length >= 2) {
-      months = match[1] ;
-      new_str = new_str + months +" Months "
+      months = parseInt(match[1]);
+      var suffix = " Months ";
+      if (months == 1) {
+        suffix = " Month ";
+      }
+      new_str = new_str + String(months) +suffix;
     }
   }
 
   reg = /(\d{1,})D/g;
   while (match = reg.exec(str)) {
     if (match.length >= 2) {
-      days = match[1] ;
-      new_str = new_str + days +" Days "
+      days = parseInt(match[1]);
+      var suffix = " Days ";
+      if (days == 1) {
+        suffix = " Day ";
+      }
+      new_str = new_str + String(days) +suffix;
     }
   }
 
