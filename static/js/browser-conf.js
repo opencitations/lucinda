@@ -67,9 +67,9 @@ var browser_conf = {
           "contents": {
             "extra": {
                 "browser_view_switch":{
-                    "labels":["ldd","Browser"],
+                    "labels":["Switch to metadata view","Switch to browser view"],
                     "values":["short_iri","short_iri"],
-                    "regex":["w3id.org\/oc\/corpus\/br\/.*","w3id.org\/oc\/browser\/br\/.*"],
+                    "regex":["corpus\/br\/.*","browser\/br\/.*"],
                     "query":[["SELECT ?resource WHERE {BIND(<https://w3id.org/oc/corpus[[VAR]]> as ?resource)}"],["SELECT ?resource WHERE {BIND(<https://w3id.org/oc/corpus[[VAR]]> as ?resource)}"]],
                     "links":["https://w3id.org/oc/corpus[[VAR]]","https://w3id.org/oc/browser[[VAR]]"]
                 }

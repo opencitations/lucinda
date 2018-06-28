@@ -362,7 +362,7 @@ var b_util = (function () {
 					if (obj[key_field].hasOwnProperty("concat-list")) {
 						arr_vals = obj[key_field]["concat-list"];
 					}
-					
+
 					for (var j = 0; j < arr_vals.length; j++) {
 						for (var i = 0; i < conf_obj[key_field].length; i++) {
 							var rule_entry = conf_obj[key_field][i];
@@ -733,10 +733,11 @@ var b_htmldom = (function () {
 						is_active = "active";
 					}
 
-
-					var loc_href = extra_comp.links[i].replace(/\[\[VAR\]\]/g, data_obj[extra_comp.values[i]].value);
-
-					str_lis = str_lis + "<li class='"+is_active+"'><a regex_rule="+extra_comp.regex[i]+" href="+loc_href+">"+extra_comp.labels[i]+"</a></li>"
+					if (is_active != "active") {
+						var loc_href = extra_comp.links[i].replace(/\[\[VAR\]\]/g, data_obj[extra_comp.values[i]].value);
+						str_lis = str_lis + "<li class='"+is_active+"'><a regex_rule="+extra_comp.regex[i]+" href="+loc_href+">"+extra_comp.labels[i]+"</a></li>";
+					}
+					
 				}
 				return str_lis;
 			}
