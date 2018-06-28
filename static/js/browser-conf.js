@@ -85,8 +85,9 @@ var browser_conf = {
               {"classes":["20px"]},
               {"fields": ["FREE-TEXT","id_lit"], "values":["DOI: ", null] },
               {"fields": ["FREE-TEXT","year"], "values":["Publication date: ", null] },
+              {"fields": ["FREE-TEXT","short_iri"], "values":["OpenCitations Corpus ID: ", null] },
+              //{"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Publisher: ", "crossref4doi.message.publisher"]},
               {"fields": ["FREE-TEXT","short_type"], "values":["Document type: ",null], "concat_style":{"short_type": "last"} }
-              /*{"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Publisher: ", "crossref4doi.message.publisher"]}*/
             ],
             "metrics": [
               {"classes":["30px"]},
@@ -122,11 +123,10 @@ var browser_conf = {
       					]
               }
             ]
-          }
-          /*,
+          },
           "ext_data": {
-            "crossref4doi": {"name": call_crossref, "param": {"fields":["id_lit","FREE-TEXT"],"values":[null,1]}}
-          },*/
+            //"crossref4doi": {"name": call_crossref, "param": {"fields":["id_lit","FREE-TEXT"],"values":[null,1]}}
+          }
     },
 
     "author": {
@@ -195,8 +195,8 @@ var browser_conf = {
                 "config_mod" : [
       							{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
       							{"key":"page_limit_def" ,"value":20},
-      							{"key":"categories.[[name,document]].fields.[[title,Year]].sort.default" ,"value":{"order": "desc"}},
-      							{"key":"progress_loader.visible" ,"value":false}
+      							{"key":"categories.[[name,document]].fields.[[title,Year]].sort.default" ,"value":{"order": "desc"}}
+                    //{"key":"progress_loader.visible" ,"value":false}
       					]
               }
             ]
@@ -224,6 +224,8 @@ function call_crossref(str_doi, field){
                 result_data = b_util.get_obj_key_val(res_obj,field);
               }
             }
+            //console.log(result_data);
+            //browser._update_page();
         }
    });
    return result_data;

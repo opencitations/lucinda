@@ -153,6 +153,10 @@ var browser = (function () {
 
 		}
 
+		function _update_page(){
+			b_htmldom.build_body(resource_res, oscar_content);
+		}
+
 		function _execute_oscar(one_result,contents) {
 			var oscar_content = contents['oscar'];
 			if (oscar_content != undefined) {
@@ -322,6 +326,7 @@ var browser = (function () {
 		}
 
 		return {
+				_update_page: _update_page,
 				assign_oscar_results: assign_oscar_results,
 				call_oscar : call_oscar,
 				build_extra_sec: build_extra_sec,
