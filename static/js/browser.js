@@ -737,7 +737,6 @@ var b_htmldom = (function () {
 						var loc_href = extra_comp.links[i].replace(/\[\[VAR\]\]/g, data_obj[extra_comp.values[i]].value);
 						str_lis = str_lis + "<li class='"+is_active+"'><a regex_rule="+extra_comp.regex[i]+" href="+loc_href+">"+extra_comp.labels[i]+"</a></li>";
 					}
-					
 				}
 				return str_lis;
 			}
@@ -801,7 +800,7 @@ var b_htmldom = (function () {
 
 				//click first elem of OSCAR menu
 				//menu_obj.active_li.click();
-				menu_obj.active_li.dispatchEvent(new MouseEvent(`click`, {bubbles: true, cancelable: true, view: window}));
+				menu_obj.active_li.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, view: window}));
 			}
 		}
 		function _build_menu(oscar_content, data_obj, config_mod, def_menu_index = 0){

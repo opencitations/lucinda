@@ -100,24 +100,24 @@ var browser_conf = {
             "oscar": [
               {
                 "query_text": "my_iri",
-                "rule": "doc_cites_list",
-                "label":"References",
-                "config_mod" : [
-      							//{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
-      							{"key":"page_limit_def" ,"value":30},
-      							{"key":"categories.[[name,document]].fields.[[title,Cited by]].sort.default" ,"value":{"order": "desc"}},
-      							{"key":"progress_loader.visible" ,"value":false}
-      					]
-              },
-              {
-                "query_text": "my_iri",
                 "rule": "doc_cites_me_list",
-                "label":"Citations",
+                "label":"Citations of this work by others",
                 "config_mod" : [
       							//{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
       							{"key":"page_limit_def" ,"value":30},
                     //{"key":"categories.[[name,document]].fields.[[title,Cited by]].sort.default" ,"value":"REMOVE_ENTRY"},
       							{"key":"categories.[[name,document]].fields.[[title,Year]].sort.default" ,"value":{"order": "asc"}},
+      							{"key":"progress_loader.visible" ,"value":false}
+      					]
+              },
+              {
+                "query_text": "my_iri",
+                "rule": "doc_cites_list",
+                "label":"Outgoing references",
+                "config_mod" : [
+      							//{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
+      							{"key":"page_limit_def" ,"value":30},
+      							{"key":"categories.[[name,document]].fields.[[title,Cited by]].sort.default" ,"value":{"order": "desc"}},
       							{"key":"progress_loader.visible" ,"value":false}
       					]
               }
