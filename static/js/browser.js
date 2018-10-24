@@ -593,6 +593,7 @@ var b_htmldom = (function () {
 
 	var oscar_container = document.getElementById("search");
 	var browser_container = document.getElementById("browser");
+	var info_container = document.getElementById("browser_info");
 	var extra_container = document.getElementById("browser_extra");
 	var header_container = document.getElementById("browser_header");
 	var details_container = document.getElementById("browser_details");
@@ -709,6 +710,9 @@ var b_htmldom = (function () {
 									).outerHTML;
 					}
 				}
+				if (table.rows.length == 0) {
+					return -1;
+				}
 				return table;
 		}
 	}
@@ -758,10 +762,21 @@ var b_htmldom = (function () {
 				_build_section(data_obj, contents, null, "extra");
 			}
 			if (details_container != null) {
-				details_container.innerHTML = _build_section(data_obj, contents, "browser-details-tab", "details").outerHTML;
+				var sec_tab_con = _build_section(data_obj, contents, "browser-details-tab", "details");
+				if (sec_tab_con != -1) {
+					details_container.innerHTML = sec_tab_con.outerHTML;
+				}else {
+					details_container.parentNode.removeChild(details_container);
+				}
 			}
 			if (metrics_container != null) {
-				metrics_container.innerHTML = _build_section(data_obj, contents, "browser-metrics-tab", "metrics").outerHTML;
+				var sec_tab_con = _build_section(data_obj, contents, "browser-metrics-tab", "metrics");
+				if (sec_tab_con != -1) {
+					metrics_container.innerHTML = sec_tab_con.outerHTML;
+				}else {
+					metrics_container.parentNode.removeChild(metrics_container);
+					info_container.setAttribute('style', "width :"+ 100 + "%");
+				}
 			}
 			return {"header": header_container, "details": details_container, "metrics": metrics_container};
 		}
