@@ -107,11 +107,25 @@ var browser_conf = {
                 "rule": "citing_documents",
                 "label":"Citations of this work by others",
                 "config_mod" : [
+                    {"key":"categories.[[name,document]].extra_elems" ,"value":[]},
       							{"key":"page_limit_def" ,"value":30},
-      							{"key":"categories.[[name,document]].fields.[[title,Date]].sort.default" ,"value":{"order": "asc"}},
+      							{"key":"categories.[[name,document]].fields.[[title,Cited]].sort.default" ,"value":{"order": "desc"}},
+      							{"key":"progress_loader.visible" ,"value":false}
+      					]
+              },
+              /*[[SLOW]]
+              {
+                "query_text": "short_iri",
+                "rule": "cited_documents",
+                "label":"Outgoing references",
+                "config_mod" : [
+                    {"key":"categories.[[name,document]].extra_elems" ,"value":[]},
+      							{"key":"page_limit_def" ,"value":30},
+      							{"key":"categories.[[name,document]].fields.[[title,Cited]].sort.default" ,"value":{"order": "desc"}},
       							{"key":"progress_loader.visible" ,"value":false}
       					]
               }
+              */
             ]
 
           },
@@ -122,73 +136,64 @@ var browser_conf = {
     },
 
     "author": {
-          "rule": "ra\/.*",
-          "query": [
-            "SELECT ?label ?orcid ?author_iri ?short_iri ?author (COUNT(distinct ?doc) AS ?num_docs) (COUNT(distinct ?cites) AS ?out_cits) (COUNT(distinct ?cited_by) AS ?in_cits_docs) (COUNT(?cited_by) AS ?in_cits_tot) WHERE {",
-    	         "BIND(<https://w3id.org/oc/corpus/[[VAR]]> as ?author_iri) .",
-               "BIND(REPLACE(STR(?author_iri), 'https://w3id.org/oc/corpus', '', 'i') as ?short_iri) .",
-               "?author_iri rdfs:label ?label .",
-    	         "?author_iri foaf:familyName ?fname .",
-    	         "?author_iri foaf:givenName ?name .",
-    	         "BIND(CONCAT(STR(?name),' ', STR(?fname)) as ?author) .",
-    	         "OPTIONAL {?role pro:isHeldBy ?author_iri .}",
-               "OPTIONAL {?doc pro:isDocumentContextFor ?role.}",
-               "OPTIONAL {?doc cito:cites ?cites .}",
-               "OPTIONAL {?cited_by cito:cites ?doc .}",
-               "OPTIONAL {",
-      	          "?author_iri datacite:hasIdentifier [",
-      		            "datacite:usesIdentifierScheme datacite:orcid ;",
-  			              "literal:hasLiteralValue ?orcid",
-                  "]",
-    	         "}",
-             "} GROUP BY ?label ?orcid ?author_iri ?short_iri ?author "
+          "rule": "Q.*",
+          "query": [`
+            SELECT DISTINCT ?author ?genderLabel ?dateLabel ?employerLabel ?educationLabel ?orcid ?short_iri ?authorLabel ?countryLabel ?occupationLabel (COUNT(distinct ?work) AS ?works) WHERE {
+                BIND(<http://www.wikidata.org/entity/[[VAR]]> as ?author)
+                OPTIONAL {?author wdt:P27 ?country.}
+                OPTIONAL {?author wdt:P496 ?orcid.}
+                OPTIONAL {?author wdt:P21 ?gender.}
+                OPTIONAL {?author wdt:P569 ?date_dt.}
+                BIND(CONCAT(STR(DAY(?date_dt)), "/", STR(MONTH(?date_dt)), "/", STR(YEAR(?date_dt))) as ?date ) .
+                OPTIONAL {?author wdt:P108 ?employer.}
+                OPTIONAL {?author wdt:P69 ?education}
+                OPTIONAL {?author wdt:P106 ?occupation.}
+                OPTIONAL {?work wdt:P50 <http://www.wikidata.org/entity/[[VAR]]> .}
+                SERVICE wikibase:label { bd:serviceParam wikibase:language 'en'. }
+            }
+            GROUP BY ?author ?genderLabel ?dateLabel ?employerLabel ?educationLabel ?orcid ?short_iri ?authorLabel ?countryLabel ?occupationLabel
+            LIMIT 500
+            `
           ],
+          "text_mapping": {},
           "links": {
-            //"author": {"field":"author_iri"},
-            "title": {"field":"doc"},
             "orcid": {"field":"orcid","prefix":"https://orcid.org/"}
           },
-          "group_by": {"keys":["label"], "concats":["doc","title","year"]},
 
           "contents": {
-            "extra": {
-                "browser_view_switch":{
-                    "labels":["ldd","Browser"],
-                    "values":["short_iri","short_iri"],
-                    "regex":["w3id.org\/oc\/corpus\/ra\/.*","w3id.org\/oc\/browser\/ra\/.*"],
-                    "query":[["PREFIX pro:<http://purl.org/spar/pro/> SELECT ?role WHERE {?role pro:isHeldBy <https://w3id.org/oc/corpus[[VAR]]>. ?role pro:withRole pro:author . }"],["SELECT ?role WHERE {BIND(<https://w3id.org/oc/corpus[[VAR]]> as ?role)}"]],
-                    "links":["https://w3id.org/oc/corpus[[VAR]]","https://w3id.org/oc/browser[[VAR]]"]
-                }
-            },
             "header": [
                 {"classes":["40px"]},
-                {"fields": ["author"], "classes":["header-title"]}
+                {"fields": ["authorLabel"], "classes":["header-title"]}
             ],
             "details": [
                 {"classes":["20px"]},
-                {"fields": ["FREE-TEXT","orcid"], "values": ["Author ORCID: ",null]}
+                {"fields": ["FREE-TEXT","orcid"], "values": ["Author ORCID: ",null]},
+                {"fields": ["FREE-TEXT","genderLabel"], "values": ["Gender: ",null]},
+                {"fields": ["FREE-TEXT","dateLabel"], "values": ["Date of birth: ",null]},
+                {"fields": ["FREE-TEXT","educationLabel"], "values": ["Educated at: ",null]},
+                {"fields": ["FREE-TEXT","occupationLabel"], "values": ["Occupation: ",null]},
+                {"fields": ["FREE-TEXT","employerLabel"], "values": ["Emplyer at: ",null]},
             ],
             "metrics": [
-                {"classes":["5px"]},
+                {"classes":["30px"]},
                 {"fields": ["FREE-TEXT"], "values": ["Metrics"], "classes": ["metrics-title"]},
                 {"classes":["25px"]},
-                {"fields": ["FREE-TEXT","num_docs","FREE-TEXT"], "values": ["Author of ",null," documents"], "classes": ["metric-entry","imp-value"]},
+                {"fields": ["FREE-TEXT","works","FREE-TEXT"], "values": ["Author of ",null," documents"], "classes": ["metric-entry","imp-value"]},
                 {"classes":["10px"]},
-                //{"fields": ["FREE-TEXT","in_cits_tot","FREE-TEXT"], "values": ["Cited ",null," number of times"], "classes": ["metric-entry","imp-value","metric-entry"]},
-                {"fields": ["FREE-TEXT","in_cits_docs","FREE-TEXT"], "values": ["Cited by ",null," different documents"], "classes": ["metric-entry","imp-value","metric-entry"]}
-                //{"classes":["5px"]}
-                //{"fields": ["FREE-TEXT","in_cits_docs","FREE-TEXT"], "values": ["\xa0\xa0\xa0 by ",null," different documents"], "classes": ["metric-entry","imp-value","metric-entry"]}
+                //{"fields": ["FREE-TEXT","in_cits_docs","FREE-TEXT"], "values": ["Cited by ",null," different documents"], "classes": ["metric-entry","imp-value","metric-entry"]}
+
+
             ],
             "oscar": [
               {
-                "query_text": "author_iri",
+                "query_text": "author",
                 "rule": "author_works",
                 "label":"Author's documents",
                 "config_mod" : [
-      							{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
-      							{"key":"page_limit_def" ,"value":20},
-      							{"key":"categories.[[name,document]].fields.[[title,Year]].sort.default" ,"value":{"order": "desc"}}
-                    //{"key":"progress_loader.visible" ,"value":false}
+                  {"key":"categories.[[name,document]].extra_elems" ,"value":[]},
+                  {"key":"page_limit_def" ,"value":30},
+                  {"key":"categories.[[name,document]].fields.[[title,Cited]].sort.default" ,"value":{"order": "desc"}},
+                  {"key":"progress_loader.visible" ,"value":false}
       					]
               }
             ]
@@ -227,4 +232,9 @@ function call_crossref(str_doi, field){
 //Heuristics
 function more_than_zero(val){
   return parseInt(val) > 0
+}
+
+
+function convert_date_time(dt_val) {
+  return dt_val.toString();
 }

@@ -11,12 +11,16 @@ var browser = (function () {
 		var ext_data = {};
 
 		/*it's a document or an author*/
-		function _get_category(resource_text) {
+		function _get_category(resource_text, exclude_list = []) {
 
 			for (var key_cat in browser_conf_json.categories) {
 				if (browser_conf_json.categories.hasOwnProperty(key_cat)) {
 					var re = new RegExp(browser_conf_json.categories[key_cat]["rule"]);
-					if (resource_text.match(re)) {return key_cat;}
+					if (resource_text.match(re)) {
+						if (exclude_list.indexOf(key_cat) == -1) {
+							return key_cat;
+						}
+					}
 				}
 			}
 			return -1;
@@ -43,10 +47,8 @@ var browser = (function () {
 
 		/*THE MAIN FUNCTION CALL
 		call the sparql endpoint and do the query*/
-		function do_sparql_query(resource_iri){
+		function do_sparql_query(resource_iri, exclude_list = []){
 
-
-			//console.log(resource_iri);
 			//var header_container = document.getElementById("browser_header");
 
 			if (resource_iri != "") {
@@ -56,7 +58,10 @@ var browser = (function () {
 				//initialize and get the browser_config_json
 				browser_conf_json = browser_conf;
 
-				var category = _get_category(resource_iri);
+				var category = _get_category(resource_iri, exclude_list);
+				if (category == -1) {
+					_build_page({}, category);
+				}
 
 				//build the sparql query in turtle format
 				var sparql_query = _build_turtle_prefixes() + _build_turtle_query(browser_conf_json.categories[category].query);
@@ -75,8 +80,15 @@ var browser = (function () {
 			        url: query_contact_tp,
 							type: 'GET',
 	    				success: function( res_data ) {
-									//console.log(res_data);
-									_build_page(res_data, category);
+									console.log(res_data);
+									if (res_data.results.bindings.length == 0) {
+										//try look for another category
+										var new_exclude_list = exclude_list;
+										new_exclude_list.push(category);
+										do_sparql_query(resource_iri, exclude_list = new_exclude_list)
+									}else {
+											_build_page(res_data, category);
+									}
 	    				}
 			   });
 			 }
