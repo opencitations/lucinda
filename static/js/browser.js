@@ -138,7 +138,9 @@ var browser = (function () {
 			//console.log(JSON.parse(JSON.stringify(data_grouped)));
 
 			var contents = browser_conf_json.categories[category]["contents"];
-			oscar_content = contents["oscar"];
+			if (contents["oscar"] != undefined) {
+				oscar_content = contents["oscar"];
+			}
 
 			b_htmldom.build_body(one_result,contents );
 
@@ -273,7 +275,6 @@ var browser = (function () {
 
 		function call_oscar(query,rule, config_mod = [], li_id = null){
 				var oscar_key = 'search?text='+query+'&rule='+rule;
-
 				if (li_id != null) {
 					b_htmldom.update_oscar_li(oscar_content,li_id);
 				}
