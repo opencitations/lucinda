@@ -104,7 +104,7 @@ var browser_conf = {
             "oscar": [
               {
                 "query_text": "short_iri",
-                "rule": "citing_documents",
+                "rule": "entity_citing_documents",
                 "label":"Citations of this work by others",
                 "config_mod" : [
                     {"key":"categories.[[name,document]].extra_elems" ,"value":[]},
