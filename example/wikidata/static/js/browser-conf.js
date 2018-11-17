@@ -20,7 +20,7 @@ var browser_conf = {
           "rule": "Q.*",
           "query": [
             `
-            SELECT DISTINCT ?work ?title ?doi ?pubmedid ?volume ?issue ?pages ?short_iri ?short_iri_id ?date (COUNT(distinct ?cites) AS ?out_cits) (COUNT(distinct ?cited) AS ?in_cits) ?author_resource ?author_str ?s_ordinal WHERE {
+            SELECT DISTINCT ?work ?title ?doi ?pubmedid ?volume ?issue ?pages ?short_iri ?short_iri_id ?date (COUNT(distinct ?cites) AS ?out_cits) (COUNT(distinct ?cited) AS ?in_cits) ?author_resource ?author_short_iri ?author_str ?s_ordinal WHERE {
 
                       #Scholarly article type
                       ?work wdt:P31 wd:Q13442814.
@@ -51,6 +51,7 @@ var browser_conf = {
                               ps:P50 ?author_resource;
                               ps:P50/rdfs:label ?author_str;
                           ]
+                          BIND(REPLACE(STR(?author_resource), 'http://www.wikidata.org/entity/', '', 'i') as ?author_short_iri) .
                           FILTER(LANGMATCHES(LANG(?author_str), "EN"))
                       }
                       UNION
@@ -61,13 +62,13 @@ var browser_conf = {
                           ]
                       }
               }
-              Group by ?work ?title ?doi ?pubmedid ?volume ?issue ?pages ?short_iri ?short_iri_id ?date ?author_resource ?author_str ?s_ordinal
+              Group by ?work ?title ?doi ?pubmedid ?volume ?issue ?pages ?short_iri ?short_iri_id ?date ?author_resource ?author_short_iri ?author_str ?s_ordinal
               order by ?s_ordinal
               LIMIT 500
             `
           ],
           "links": {
-            "author_str": {"field":"author_resource","prefix":""},
+            "author_str": {"field":"author_short_iri","prefix":"https://opencitations.github.io/lucinda/example/wikidata/browser.html?browse="},
             "doi": {"field":"doi","prefix":"https://www.doi.org/"},
             "work": {"field":"work","prefix":""},
             "pubmedid": {"field":"pubmedid","prefix":"https://www.ncbi.nlm.nih.gov/pubmed/"},
