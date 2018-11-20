@@ -1,5 +1,5 @@
 var browser_conf = {
-  "sparql_endpoint": "http://localhost:8080/index/coci/sparql",
+  "sparql_endpoint": "https://w3id.org/oc/index/coci/sparql",
 
   "prefixes": [
       {"prefix":"cito","iri":"http://purl.org/spar/cito/"},
@@ -84,7 +84,11 @@ var browser_conf = {
               {"classes":["15px"]},
               {"fields": ["FREE-TEXT","timespan","FREE-TEXT"], "values": ["The timespan is ",null,""], "classes": ["metric-entry","imp-value",""]}
             ],
+            "graphics": {
+              "citations_in_time":{
 
+              }
+            },
             "oscar": [
               /*{
                 "query_text": "my_iri",

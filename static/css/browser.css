@@ -175,3 +175,9 @@ body.lucinda-cover{
   --main-bg-color: #336699;
   --hover_color: #19334d;
 }
+
+/*Badges*/
+.gr_citations_in_time{
+  width: 500px;
+  height: 500px;
+}

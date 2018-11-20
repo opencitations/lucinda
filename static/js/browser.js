@@ -156,6 +156,8 @@ var browser = (function () {
 
 			b_htmldom.build_body(one_result,contents );
 
+			b_htmldom.build_citations_chart();
+
 			_execute_oscar(one_result,contents);
 
 			//b_htmldom.build_oscar(one_result,contents );
@@ -611,6 +613,7 @@ var b_htmldom = (function () {
 	var header_container = document.getElementById("browser_header");
 	var details_container = document.getElementById("browser_details");
 	var metrics_container = document.getElementById("browser_metrics");
+	var gr_citations_in_time_container = document.getElementById("gr_citations_in_time");
 
 	function _init_tr(obj_vals, content_entry){
 		var tr = document.createElement("tr");
@@ -898,6 +901,48 @@ var b_htmldom = (function () {
 		}
 	}
 
+	//new charts
+	function build_citations_chart(data_obj, contents){
+
+	 	var ctx = gr_citations_in_time_container.getContext('2d');
+		var myChart = new Chart(ctx, {
+		    type: 'bar',
+		    data: {
+		        labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
+		        datasets: [{
+		            label: '# of Votes',
+		            data: [12, 19, 3, 5, 2, 3],
+		            backgroundColor: [
+		                'rgba(255, 99, 132, 0.2)',
+		                'rgba(54, 162, 235, 0.2)',
+		                'rgba(255, 206, 86, 0.2)',
+		                'rgba(75, 192, 192, 0.2)',
+		                'rgba(153, 102, 255, 0.2)',
+		                'rgba(255, 159, 64, 0.2)'
+		            ],
+		            borderColor: [
+		                'rgba(255,99,132,1)',
+		                'rgba(54, 162, 235, 1)',
+		                'rgba(255, 206, 86, 1)',
+		                'rgba(75, 192, 192, 1)',
+		                'rgba(153, 102, 255, 1)',
+		                'rgba(255, 159, 64, 1)'
+		            ],
+		            borderWidth: 1
+		        }]
+		    },
+		    options: {
+		        scales: {
+		            yAxes: [{
+		                ticks: {
+		                    beginAtZero:true
+		                }
+		            }]
+		        }
+		    }
+		});
+	}
+
 	return {
 		handle_menu: handle_menu,
 		enable_oscar_menu: enable_oscar_menu,
@@ -905,6 +950,7 @@ var b_htmldom = (function () {
 		build_extra: build_extra,
 		build_body: build_body,
 		build_oscar: build_oscar,
-		update_oscar_li: update_oscar_li
+		update_oscar_li: update_oscar_li,
+		build_citations_chart: build_citations_chart
 	}
 })();
