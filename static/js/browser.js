@@ -634,12 +634,15 @@ var b_htmldom = (function () {
 					var elem_dom = document.createElement("elem");
 
 					var key = content_entry.fields[i];
-					var inner_text = "unknown"
+					var inner_text = "unknown";
 					if (obj_vals.hasOwnProperty(key)) {
 						if (! b_util.is_undefined_key(content_entry,"concat_style."+String(key))) {
 								inner_text = b_util.build_str(key, obj_vals[key],content_entry.concat_style[key]);
 						}else {
 								inner_text = b_util.build_str(key, obj_vals[key],null);
+						}
+						if (inner_text == "REMOVE") {
+
 						}
 					}else {
 						if (key == "FREE-TEXT") {

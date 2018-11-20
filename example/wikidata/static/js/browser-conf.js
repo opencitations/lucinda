@@ -74,7 +74,10 @@ var browser_conf = {
             "pubmedid": {"field":"pubmedid","prefix":"https://www.ncbi.nlm.nih.gov/pubmed/"},
           },
           "group_by": {"keys":["work"], "concats":["author_str"]},
-          "none_values": {"author_str": "No authors", "title": "Document without title"},
+          "none_values": {
+                      "author_str": "No authors",
+                      "title": "Document without title"
+          },
 
           "contents": {
             "header": [
@@ -87,10 +90,11 @@ var browser_conf = {
               {"classes":["20px"]},
               {"fields": ["FREE-TEXT","work"], "values":["Wikidata resource: ", null] },
               {"classes":["10px"]},
-              {"fields": ["FREE-TEXT","doi"], "values":["DOI: ", null] },
-              {"fields": ["FREE-TEXT","volume","FREE-TEXT","pages"], "values":["Volume: ",null," ;Pages: ",null]},
-              {"fields": ["FREE-TEXT","date"], "values":["Publication date: ", null] },
-              {"fields": ["FREE-TEXT","pubmedid"], "values":["PubMed ID: ", null] }
+              {"fields": ["FREE-TEXT","doi"], "values":["DOI: ", null], "respects":[[],[not_unknown]] },
+              {"fields": ["FREE-TEXT","volume"], "values":["Volume: ",null], "respects":[[],[not_unknown]]},
+              {"fields": ["FREE-TEXT","pages"], "values":["Pages: ",null], "respects":[[],[not_unknown]]},
+              {"fields": ["FREE-TEXT","date"], "values":["Publication date: ", null], "respects":[[],[not_unknown]] },
+              {"fields": ["FREE-TEXT","pubmedid"], "values":["PubMed ID: ", null], "respects":[[],[not_unknown]]}
             ],
             "metrics": [
               {"classes":["30px"]},
@@ -114,10 +118,9 @@ var browser_conf = {
       							{"key":"progress_loader.visible" ,"value":false}
       					]
               },
-              /*[[SLOW]]
               {
                 "query_text": "short_iri",
-                "rule": "cited_documents",
+                "rule": "entity_cited_documents",
                 "label":"Outgoing references",
                 "config_mod" : [
                     {"key":"categories.[[name,document]].extra_elems" ,"value":[]},
@@ -126,7 +129,6 @@ var browser_conf = {
       							{"key":"progress_loader.visible" ,"value":false}
       					]
               }
-              */
             ]
 
           },
@@ -235,6 +237,9 @@ function more_than_zero(val){
   return parseInt(val) > 0
 }
 
+function not_unknown(val){
+  return (val != 'unknown')
+}
 
 function convert_date_time(dt_val) {
   return dt_val.toString();
