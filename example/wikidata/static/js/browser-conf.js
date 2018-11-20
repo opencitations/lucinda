@@ -171,11 +171,11 @@ var browser_conf = {
             "details": [
                 {"classes":["20px"]},
                 {"fields": ["FREE-TEXT","orcid"], "values": ["Author ORCID: ",null]},
-                {"fields": ["FREE-TEXT","genderLabel"], "values": ["Gender: ",null]},
+                {"fields": ["FREE-TEXT","genderLabel"], "values": ["Gender: ",null], "respects":[[],[not_unknown]]},
                 //{"fields": ["FREE-TEXT","dateLabel"], "values": ["Date of birth: ",null]},
-                {"fields": ["FREE-TEXT","educationLabel"], "values": ["Educated at: ",null]},
-                {"fields": ["FREE-TEXT","occupationLabel"], "values": ["Occupation: ",null]},
-                {"fields": ["FREE-TEXT","employerLabel"], "values": ["Emplyer at: ",null]},
+                {"fields": ["FREE-TEXT","educationLabel"], "values": ["Educated at: ",null], "respects":[[],[not_unknown]]},
+                {"fields": ["FREE-TEXT","occupationLabel"], "values": ["Occupation: ",null], "respects":[[],[not_unknown]]},
+                {"fields": ["FREE-TEXT","employerLabel"], "values": ["Emplyer at: ",null], "respects":[[],[not_unknown]]},
             ],
             "metrics": [
                 {"classes":["30px"]},
