@@ -904,6 +904,9 @@ var b_htmldom = (function () {
 	//new charts
 	function build_citations_chart(data_obj, contents){
 
+		if (gr_citations_in_time_container == null) {
+			return -1;
+		}
 	 	var ctx = gr_citations_in_time_container.getContext('2d');
 		var myChart = new Chart(ctx, {
 		    type: 'bar',
