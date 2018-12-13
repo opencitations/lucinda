@@ -18,21 +18,31 @@ var browser_conf = {
   "categories":{
     "citation": {
           "rule": "ci\/.*",
-          "query": [
-            "SELECT DISTINCT ?iri ?short_iri ?shorter_coci ?citing_doi ?citing_doi_iri ?cited_doi ?cited_doi_iri ?creationdate ?timespan",
-                "WHERE  {",
-                  "BIND(<https://w3id.org/oc/index/coci/[[VAR]]> as ?iri) .",
-                  "OPTIONAL {",
-                    "BIND(REPLACE(STR(?iri), 'https://w3id.org/oc/index/coci/ci/', '', 'i') as ?short_iri) .",
-                    "?iri cito:hasCitingEntity ?citing_doi_iri .",
-                    "BIND(REPLACE(STR(?citing_doi_iri), 'http://dx.doi.org/', '', 'i') as ?citing_doi) .",
-                    "?iri cito:hasCitedEntity ?cited_doi_iri .",
-                    "BIND(REPLACE(STR(?cited_doi_iri), 'http://dx.doi.org/', '', 'i') as ?cited_doi) .",
-                    "?iri cito:hasCitationCreationDate ?creationdate .",
-                    "?iri cito:hasCitationTimeSpan ?timespan .",
-                  "}",
-                "}"
-          ],
+          "query": [`
+            SELECT DISTINCT ?iri ?short_iri ?shorter_coci ?citing_doi ?citing_doi_iri ?cited_doi ?cited_doi_iri ?creationdate ?timespan ?isJSelfCitation ?isASelfCitation
+                WHERE  {
+                  BIND(<https://w3id.org/oc/index/coci/[[VAR]]> as ?iri) .
+                  OPTIONAL {
+                    BIND(REPLACE(STR(?iri), 'https://w3id.org/oc/index/coci/ci/', '', 'i') as ?short_iri) .
+                    ?iri cito:hasCitingEntity ?citing_doi_iri .
+                    BIND(REPLACE(STR(?citing_doi_iri), 'http://dx.doi.org/', '', 'i') as ?citing_doi) .
+                    ?iri cito:hasCitedEntity ?cited_doi_iri .
+                    BIND(REPLACE(STR(?cited_doi_iri), 'http://dx.doi.org/', '', 'i') as ?cited_doi) .
+                    ?iri cito:hasCitationCreationDate ?creationdate .
+                    ?iri cito:hasCitationTimeSpan ?timespan .
+                  }
+
+                  OPTIONAL{
+    		               <https://w3id.org/oc/index/coci/ci/02001000308362819371213133704040001030309-02001000308362819371213133704040000080604> a cito:JournalSelfCitation .
+    		               BIND('True' as ?isJSelfCitation).
+    		          }
+
+                  OPTIONAL{
+    		               <https://w3id.org/oc/index/coci/ci/02001000308362819371213133704040001030309-02001000308362819371213133704040000080604> a cito:AuthorlSelfCitation .
+    		               BIND('True' as ?isASelfCitation).
+    		          }
+                }
+          `],
           "links": {
             "short_iri": {"field":"iri","prefix":""}
           },
@@ -47,6 +57,12 @@ var browser_conf = {
               ],
               "timespan":[
                   {"func": [timespan_translate]}
+              ],
+              "isJSelfCitation":[
+                  {"func": [make_it_empty]}
+              ],
+              "isASelfCitation":[
+                  {"func": [make_it_empty]}
               ]
           },
 
@@ -82,7 +98,9 @@ var browser_conf = {
               {"classes":["30px"]},
               {"fields": ["FREE-TEXT"], "values": ["Metrics"], "classes": ["metrics-title"]},
               {"classes":["15px"]},
-              {"fields": ["FREE-TEXT","timespan","FREE-TEXT"], "values": ["The timespan is ",null,""], "classes": ["metric-entry","imp-value",""]}
+              {"fields": ["FREE-TEXT","timespan","FREE-TEXT"], "values": ["The timespan is ",null,""], "classes": ["metric-entry","imp-value",""]},
+              {"fields": ["FREE-TEXT","isJSelfCitation"], "values":["Is a Journal Self Citation",null], "respects":[[],[not_unknown]], "classes": ["imp-value"]  },
+              {"fields": ["FREE-TEXT","isASelfCitation"], "values":["Is an Author Self Citation",null], "respects":[[],[not_unknown]], "classes": ["imp-value"]}
             ],
             "graphics": {
               "citations_in_time":{
@@ -119,8 +137,98 @@ var browser_conf = {
             "call_crossref_4citation_citing": {"name": call_crossref_4citation, "param": {"fields":["citing_doi"],"values":[null]}},
             "call_crossref_4citation_cited": {"name": call_crossref_4citation, "param": {"fields":["cited_doi"],"values":[null]}}
           }
+    },
+
+    //new category
+    "br_stats": {
+      "rule":"(10.\\d{4,9}\/[-._;()/:A-Za-z0-9][^\\s]+)",
+      "query": [`
+        SELECT ?doi_iri ?doi
+        WHERE  {
+            BIND(STR("[[VAR]]") as ?doi) .
+            BIND(<http://dx.doi.org/[[VAR]]> as ?doi_iri) .
+        }
+        `
+      ],
+      "links": {
+        "doi_iri": {"field":"doi_iri","prefix":""}
+      },
+      "ext_data": {
+        "crossref_ref": {"name": call_crossref_4citation, "param": {"fields":["doi"],"values":[null]}}
+      },
+      "contents":{
+          "header": [
+              {"classes":["40px"]},
+              {"fields": ["doi"], "values":[null], "classes":["header-title text-success"]},
+              {"classes":["8px"]},
+              {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Reference: ", "crossref_ref"], "classes": ["subtitle","text-success"]},
+          ],
+          "oscar":{},
+
+          "view": {
+            "citations_in_time": {
+                      "source":{
+                          "name": "oscar",
+                          "param": {
+                              "query_text": 'search?text=[[?doi]]&rule=cits_stats',
+                          }
+                        },
+                        "fields":["date","type","count"],
+                        "respects": [{"func":is_in_cits,"param":"type"}],
+                        "graph": {
+                          'style': 'bars',
+                          'label': 'Number of citations',
+                          'data': {'x':'date', 'y':'count'},
+                          'background_color': 'random',
+                          'border_color': 'random',
+                          'borderWidth': 1
+                        }
+
+            }
+      }
+      }
     }
   }
+}
+
+
+function call_coci_oscar(param, fun_view_callbk) {
+  var call_url = "file:///Users/ivan.heibi/opencitations/oscar/search-coci.html?text="+encodeURIComponent(param["str_doi"])+"&rule="+encodeURIComponent(param["rule_name"]);
+  var result_data = "";
+  $.ajax({
+        dataType: "json",
+        url: call_url,
+        type: 'GET',
+        async: false,
+        success: function( res_obj ) {
+            result_data = res_obj;
+        }
+   });
+   console.log(result_data);
+   return result_data;
+}
+
+function call_coci_ramose(str_doi, field) {
+  var call_ramose_api_metadata = "http://opencitations.net/index/coci/api/v1/metadata/";
+  var call_full = call_ramose_api_metadata + encodeURIComponent(str_doi);
+  var result_data = "";
+  $.ajax({
+        dataType: "json",
+        url: call_full,
+        type: 'GET',
+        async: false,
+        success: function( res_obj ) {
+            if (field == 1) {
+              result_data = res_obj[0];
+            }else {
+              if (!b_util.is_undefined_key(res_obj[0],field)) {
+                result_data = b_util.get_obj_key_val(res_obj[0],field);
+              }
+            }
+        }
+   });
+   return result_data;
+
 }
 
 //"FUNC" {"name": call_crossref, "param":{"fields":[],"vlaues":[]}}
@@ -217,4 +325,22 @@ function timespan_translate(str) {
 //Heuristics
 function more_than_zero(val){
   return parseInt(val) > 0
+}
+
+function is_in_cits(val){
+  return val == "cits_in" ;
+}
+
+function not_unknown(val){
+  return (val != 'unknown')
+}
+
+function not_empty(val){
+  return (val != '')
+}
+
+function make_it_empty(val){
+  if (val == 'True') {
+    return '';
+  }
 }

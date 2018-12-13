@@ -9,6 +9,13 @@ var browser = (function () {
 		var oscar_content = null;
 		var current_oscar_tab = null;
 		var ext_data = {};
+		var grs_data = {};
+		/*
+		var call_functions = {
+			'oscar_table': browser.assign_oscar_results,
+			'view': browse.update_grs_data
+		}
+		*/
 
 		/*it's a document or an author*/
 		function _get_category(resource_text, exclude_list = []) {
@@ -47,7 +54,7 @@ var browser = (function () {
 
 		/*THE MAIN FUNCTION CALL
 		call the sparql endpoint and do the query*/
-		function do_sparql_query(resource_iri, exclude_list = []){
+		function do_sparql_query(resource_iri, given_category = null, exclude_list = [], call_fun = null){
 
 			//var header_container = document.getElementById("browser_header");
 
@@ -58,10 +65,14 @@ var browser = (function () {
 				//initialize and get the browser_config_json
 				browser_conf_json = browser_conf;
 
-				var category = _get_category(resource_iri, exclude_list);
-				if (category == -1) {
-					_build_page({}, category);
+				var category = given_category;
+				if (category == null) {
+					category = _get_category(resource_iri, exclude_list);
+					if (category == -1) {
+						_build_page({}, category);
+					}
 				}
+
 
 				//build the sparql query in turtle format
 				var sparql_query = _build_turtle_prefixes() + _build_turtle_query(browser_conf_json.categories[category].query);
@@ -80,13 +91,15 @@ var browser = (function () {
 			        url: query_contact_tp,
 							type: 'GET',
 	    				success: function( res_data ) {
-									console.log(res_data);
 									if (res_data.results.bindings.length == 0) {
 										//try look for another category
 										var new_exclude_list = exclude_list;
 										new_exclude_list.push(category);
 										do_sparql_query(resource_iri, exclude_list = new_exclude_list)
 									}else {
+											if (call_fun != null) {
+												Reflect.apply(call_fun,undefined,[res_data,category]);
+											}
 											_build_page(res_data, category);
 									}
 	    				}
@@ -156,11 +169,14 @@ var browser = (function () {
 
 			b_htmldom.build_body(one_result,contents );
 
-			b_htmldom.build_citations_chart();
 
-			_execute_oscar(one_result,contents);
 
-			//b_htmldom.build_oscar(one_result,contents );
+
+			//check graphs elements
+			_build_views(one_result, contents);
+
+
+			_build_oscar_table(one_result,contents);
 
 			//console.log(document.getElementById("browser"));
 
@@ -169,11 +185,120 @@ var browser = (function () {
 
 		}
 
+		function _build_views(one_result, contents) {
+			var view_obj = contents["view"];
+			if (view_obj != undefined) {
+				for (gr_id in view_obj) {
+					var gr_obj = view_obj[gr_id];
+
+					//gr internal fields
+					var source = gr_obj['source'];
+					var fields = gr_obj['fields'];
+					var respects = gr_obj['respects'];
+					var graph = gr_obj['graph'];
+
+					switch (source.name) {
+						case "oscar":
+							//build the textual query
+							var param = source.param;
+							var my_query_text = __build_text_query(one_result, param.query_text);
+							grs_data[my_query_text] = {'gr_id':gr_id,'data':null, 'fields':fields, 'respects':respects, 'graph':graph};
+							search.do_sparql_query(my_query_text, null ,[], true, browser.update_grs_data);
+							break;
+						default:
+							break;
+					}
+				}
+			}
+			function __build_text_query(one_result, query_text) {
+				var myRegexp = /\[\[\?(.*)\]\]/g;
+				var match = myRegexp.exec(query_text);
+
+				//get all values
+				var index = [];
+				for (var i = 1; i <= match.length; i++) {
+					if (one_result[match[i]] != undefined) {
+						index.push(
+							{
+								'name': match[i],
+								'value': one_result[match[i]].value
+							}
+						)
+					}
+				}
+
+				//rebuild the query
+				var matched_query = query_text;
+				for (var i = 0; i < index.length; i++) {
+					matched_query = matched_query.replace("[[?"+index[i].name+"]]", index[i].value);
+				}
+
+				return matched_query;
+			}
+		}
+
+		function update_grs_data(oscar_key, results){
+			if (oscar_key in grs_data) {
+					grs_data[oscar_key]['data'] = results;
+					grs_data[oscar_key]['data'] = __get_values_with_rist(
+						grs_data[oscar_key]['data'],
+						grs_data[oscar_key]['fields'],
+						grs_data[oscar_key]['respects']
+					)
+					console.log(grs_data);
+					//build the graphic
+					b_htmldom.build_grs(grs_data[oscar_key]['data'], grs_data[oscar_key]['graph']);
+			}
+
+			function __get_values_with_rist(dataarr_obj, fields, respects) {
+
+				var ret_vals = {};
+				var respects_index = {};
+
+				//init both dict
+				for (var i = 0; i < fields.length; i++) {
+					ret_vals[fields[i]] = [];
+				}
+				for (var i = 0; i < respects.length; i++) {
+					if (respects[i].param in respects_index) {
+						respects_index[respects[i].param].push(respects[i].func);
+					}else {
+						respects_index[respects[i].param] = [respects[i].func];
+					}
+				}
+
+				// check if all fields respect restrictions
+				for (var i = 0; i < dataarr_obj.length; i++) {
+					var dataobj = dataarr_obj[i];
+					var addit = true;
+					for (var key_field in dataobj) {
+							if (key_field in respects_index) {
+								for (var j = 0; j < respects_index[key_field].length; j++) {
+									var func_i = respects_index[key_field][j];
+									addit = addit && Reflect.apply(func_i,undefined,[dataobj[key_field].value]);
+								}
+							}
+					}
+
+					//add all row
+					if (addit) {
+						for (var key_field in dataobj) {
+							if (key_field in ret_vals) {
+								ret_vals[key_field].push(dataobj[key_field].value);
+							}
+						}
+					}
+				}
+
+				return ret_vals;
+			}
+		}
+
 		function _update_page(){
 			b_htmldom.build_body(resource_res, oscar_content);
 		}
 
-		function _execute_oscar(one_result,contents) {
+		function _build_oscar_table(one_result,contents) {
 			var oscar_content = contents['oscar'];
 			if (oscar_content != undefined) {
 				pending_oscar_calls = oscar_content.length;
@@ -191,7 +316,7 @@ var browser = (function () {
 
 				for (var i = 0; i < oscar_content.length; i++) {
 					var oscar_entry = oscar_content[i];
-					call_oscar(one_result[oscar_entry.query_text].value, oscar_entry["rule"], oscar_entry["config_mod"]);
+					call_oscar(one_result[oscar_entry.query_text].value, oscar_entry["rule"], browser.assign_oscar_results, oscar_entry["config_mod"]);
 				}
 			}
 		}
@@ -287,14 +412,14 @@ var browser = (function () {
 			return new_data;
 		}
 
-		function call_oscar(query,rule, config_mod = [], li_id = null){
+		function call_oscar(query,rule, callbk_func_key, config_mod = [], li_id = null){
 				var oscar_key = 'search?text='+query+'&rule='+rule;
 				if (li_id != null) {
 					b_htmldom.update_oscar_li(oscar_content,li_id);
 				}
 
 				if (!("results" in oscar_data[oscar_key])) {
-					search.do_sparql_query(oscar_key, null ,[], true, browser.assign_oscar_results);
+					search.do_sparql_query(oscar_key, null ,[], true, call_functions[callbk_func_key]);
 				}else {
 					//in case the table data has not been yet initialized
 					console.log(oscar_data[oscar_key]);
@@ -342,11 +467,13 @@ var browser = (function () {
 
 		return {
 				_update_page: _update_page,
-				assign_oscar_results: assign_oscar_results,
 				call_oscar : call_oscar,
 				build_extra_sec: build_extra_sec,
 				do_sparql_query: do_sparql_query,
-				get_ext_data: get_ext_data
+				get_ext_data: get_ext_data,
+				//call back functions
+				assign_oscar_results: assign_oscar_results,
+				update_grs_data: update_grs_data
 		 }
 })();
 
@@ -515,15 +642,28 @@ var b_util = (function () {
 	}
 
 	/*collect the values of all the 'keys' in obj*/
-	function collect_values(obj,keys){
+	function collect_values(obj,keys, heuristics = null){
 		var new_obj = {};
 		if ((obj != null) && (obj != undefined) && (keys != null) && (keys != undefined)) {
 			for (var k in obj) {
 				if (obj.hasOwnProperty(k)){
+					//add them all
 					if (keys == 1) {
 						new_obj[k] = obj[k];
 					}else if (keys.indexOf(k) != -1){
-						new_obj[k] = obj[k];
+						var inserit = true;
+						//check Heuristics
+						if (heuristics != null) {
+							for (var h_obj in heuristics) {
+								var my_fun = heuristics[h_obj]['func'];
+								var my_params = heuristics[h_obj]['param'];
+								inserit = inserit && Reflect.apply(my_func,undefined,collect_values(obj[k],my_params));
+							}
+						}
+						// add it
+						if (inserit) {
+								new_obj[k] = obj[k];
+						}
 					}
 				}
 			}
@@ -613,7 +753,7 @@ var b_htmldom = (function () {
 	var header_container = document.getElementById("browser_header");
 	var details_container = document.getElementById("browser_details");
 	var metrics_container = document.getElementById("browser_metrics");
-	var gr_citations_in_time_container = document.getElementById("gr_citations_in_time");
+	var gr_bars_containers = document.getElementsByClassName("gr");
 
 	function _init_tr(obj_vals, content_entry){
 		var tr = document.createElement("tr");
@@ -852,7 +992,7 @@ var b_htmldom = (function () {
 				var query = data_obj[oscar_obj.query_text].value;
 				var rule = oscar_obj.rule;
 
-				a_elem.href = "javascript:browser.call_oscar('"+query+"','"+rule+"','"+[]+"','"+i+"')";
+				a_elem.href = "javascript:browser.call_oscar('"+query+"','"+rule+"','browser.assign_oscar_results','"+[]+"','"+i+"')";
 				a_elem.innerHTML = oscar_obj["label"];
 				var is_active = "";
 				if (i == def_menu_index) {
@@ -902,49 +1042,110 @@ var b_htmldom = (function () {
 	}
 
 	//new charts
-	function build_citations_chart(data_obj, contents){
+	function build_grs(data_obj, gr_options){
 
-		if (gr_citations_in_time_container == null) {
+		var arr_grs = _get_all_graphs();
+		if (arr_grs.length == 0) {
 			return -1;
 		}
-	 	var ctx = gr_citations_in_time_container.getContext('2d');
-		var myChart = new Chart(ctx, {
-		    type: 'bar',
-		    data: {
-		        labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
-		        datasets: [{
-		            label: '# of Votes',
-		            data: [12, 19, 3, 5, 2, 3],
-		            backgroundColor: [
-		                'rgba(255, 99, 132, 0.2)',
-		                'rgba(54, 162, 235, 0.2)',
-		                'rgba(255, 206, 86, 0.2)',
-		                'rgba(75, 192, 192, 0.2)',
-		                'rgba(153, 102, 255, 0.2)',
-		                'rgba(255, 159, 64, 0.2)'
-		            ],
-		            borderColor: [
-		                'rgba(255,99,132,1)',
-		                'rgba(54, 162, 235, 1)',
-		                'rgba(255, 206, 86, 1)',
-		                'rgba(75, 192, 192, 1)',
-		                'rgba(153, 102, 255, 1)',
-		                'rgba(255, 159, 64, 1)'
-		            ],
-		            borderWidth: 1
-		        }]
-		    },
-		    options: {
-		        scales: {
-		            yAxes: [{
-		                ticks: {
-		                    beginAtZero:true
-		                }
-		            }]
-		        }
-		    }
-		});
+
+		for (var i = 0; i < arr_grs.length; i++) {
+
+			if (arr_grs[i]['gr_style'] != gr_options['style']) {
+				continue;
+			}
+
+			var gr_data_normalized = _normalize_gr_data(data_obj, gr_options);
+			var canavas_dom = null;
+			switch (gr_options['style']) {
+				case 'bars':
+					canavas_dom = _build_bars_gr(arr_grs[i], gr_data_normalized);
+					break;
+				default:
+			}
+
+			gr_bars_containers[arr_grs[i].id].appendChild(canavas_dom);
+		}
+
+		function _get_all_graphs() {
+
+			var arr_grs = [];
+			for (var i = 0; i < gr_bars_containers.length; i++) {
+				var obj_gr = {};
+
+				var gr_bar_container_i = gr_bars_containers[i];
+
+				obj_gr['id'] = i;
+				obj_gr['category'] =  gr_bar_container_i.getAttribute('category');
+				obj_gr['view'] =  gr_bar_container_i.getAttribute('view');
+				obj_gr['gr_style'] =  gr_bar_container_i.getAttribute('gr_style');
+				arr_grs.push(obj_gr);
+			}
+
+			return arr_grs;
+		}
+
+		function _normalize_gr_data(data_obj, gr_options) {
+			var gr_data = {};
+			switch (gr_options.style) {
+				case 'bars':
+					//the data
+					for (var datakey in gr_options.data) {
+						gr_data[datakey] = data_obj[gr_options.data[datakey]];
+					}
+					//other options
+					if ('label' in gr_options) {
+						gr_data['label'] = gr_options['label'];
+					}
+					if ('background_color' in gr_options) {
+					}
+					if ('border_color' in gr_options) {
+					}
+					if ('borderWidth' in gr_options) {
+					}
+					break;
+
+				default:
+			}
+			return gr_data;
+		}
+
+		function _build_bars_gr(gr_obj, gr_data) {
+
+			var canavas_dom = document.createElement("canvas");
+			var ctx = canavas_dom.getContext('2d');
+
+			var opt_obj = {'label':""};
+			if ('label' in gr_data) {
+				opt_obj['label'] = gr_data['label'];
+			}
+			var myChart = new Chart(ctx, {
+			    type: 'bar',
+			    data: {
+			        labels: gr_data.x,
+			        datasets: [{
+			            label: opt_obj.label,
+			            data: gr_data.y,
+			            //backgroundColor: [],
+			            //borderColor: [],
+			            borderWidth: 1
+			        }]
+			    },
+			    options: {
+			        scales: {
+			            yAxes: [{
+			                ticks: {
+			                    beginAtZero:true
+			                }
+			            }]
+			        }
+			    }
+			});
+
+			return canavas_dom;
+		}
 	}
+
 
 	return {
 		handle_menu: handle_menu,
@@ -954,6 +1155,6 @@ var b_htmldom = (function () {
 		build_body: build_body,
 		build_oscar: build_oscar,
 		update_oscar_li: update_oscar_li,
-		build_citations_chart: build_citations_chart
+		build_grs: build_grs
 	}
 })();
