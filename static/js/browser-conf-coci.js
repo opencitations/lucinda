@@ -33,12 +33,12 @@ var browser_conf = {
                   }
 
                   OPTIONAL{
-    		               <https://w3id.org/oc/index/coci/ci/02001000308362819371213133704040001030309-02001000308362819371213133704040000080604> a cito:JournalSelfCitation .
+    		               ?iri a cito:JournalSelfCitation .
     		               BIND('True' as ?isJSelfCitation).
     		          }
 
                   OPTIONAL{
-    		               <https://w3id.org/oc/index/coci/ci/02001000308362819371213133704040001030309-02001000308362819371213133704040000080604> a cito:AuthorlSelfCitation .
+    		               ?iri a cito:AuthorSelfCitation .
     		               BIND('True' as ?isASelfCitation).
     		          }
                 }
@@ -99,12 +99,12 @@ var browser_conf = {
               {"fields": ["FREE-TEXT"], "values": ["Metrics"], "classes": ["metrics-title"]},
               {"classes":["15px"]},
               {"fields": ["FREE-TEXT","timespan","FREE-TEXT"], "values": ["The timespan is ",null,""], "classes": ["metric-entry","imp-value",""]},
-              {"fields": ["FREE-TEXT","isJSelfCitation"], "values":["Is a Journal Self Citation",null], "respects":[[],[not_unknown]], "classes": ["imp-value"]  },
+              {"classes":["5px"]},
+              {"fields": ["FREE-TEXT","isJSelfCitation"], "values":["Is a Journal Self Citation",null], "respects":[[],[not_unknown]], "classes": ["imp-value"]},
               {"fields": ["FREE-TEXT","isASelfCitation"], "values":["Is an Author Self Citation",null], "respects":[[],[not_unknown]], "classes": ["imp-value"]}
             ],
             "graphics": {
               "citations_in_time":{
-
               }
             },
             "oscar": [
@@ -167,17 +167,19 @@ var browser_conf = {
 
           "view": {
             "citations_in_time": {
+
                       "source":{
                           "name": "oscar",
                           "param": {
                               "query_text": 'search?text=[[?doi]]&rule=cits_stats',
                           }
                         },
+
                         "fields":["date","type","count"],
                         "respects": [{"func":is_in_cits,"param":"type"}],
                         "graph": {
                           'style': 'bars',
-                          'label': 'Number of citations',
+                          'label': 'Number of Citations',
                           'data': {'x':'date', 'y':'count'},
                           'background_color': 'random',
                           'border_color': 'random',
