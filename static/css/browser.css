@@ -155,6 +155,7 @@ body.lucinda-cover{
 #oscar_nav > .active > a:focus {
   color: black;
   border-bottom-color: grey ;
+  background-color: transparent;
 }
 
 /*re-define search css components*/

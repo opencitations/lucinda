@@ -311,8 +311,8 @@ var browser = (function () {
 
 					oscar_data[oscar_key] = {};
 					oscar_data[oscar_key]["data"] = search.get_search_data(true, oscar_entry["config_mod"]);
-					//console.log(JSON.parse(JSON.stringify(oscar_data)));
 				}
+				console.log(JSON.parse(JSON.stringify(oscar_data)));
 
 				for (var i = 0; i < oscar_content.length; i++) {
 					var oscar_entry = oscar_content[i];
@@ -412,35 +412,38 @@ var browser = (function () {
 			return new_data;
 		}
 
+		function click_for_oscar(query,rule,arr,i){
+				call_oscar(query,rule,browser.assign_oscar_results,arr,i);
+		}
+
 		function call_oscar(query,rule, callbk_func_key, config_mod = [], li_id = null){
 				var oscar_key = 'search?text='+query+'&rule='+rule;
 				if (li_id != null) {
 					b_htmldom.update_oscar_li(oscar_content,li_id);
 				}
-
 				if (!("results" in oscar_data[oscar_key])) {
-					search.do_sparql_query(oscar_key, null ,[], true, call_functions[callbk_func_key]);
+						search.do_sparql_query(oscar_key, null ,[], true, callbk_func_key);
 				}else {
-					//in case the table data has not been yet initialized
-					console.log(oscar_data[oscar_key]);
-					if (oscar_data[oscar_key].data.table_conf.data == null) {
-						 //search.change_search_data(oscar_data[oscar_key].data);
-						 oscar_data[oscar_key]["data"] = search.build_table(oscar_data[oscar_key].results);
-					}else {
-						// save current state of oscar
-						oscar_data[current_oscar_tab].data = search.get_search_data();
-						// load new oscar data
-						search.change_search_data(oscar_data[oscar_key].data);
+					if (oscar_data[oscar_key]['results']) {
+							//in case the table data has not been yet initialized
+							if (oscar_data[oscar_key].data.table_conf.data == null) {
+								 //search.change_search_data(oscar_data[oscar_key].data);
+								 oscar_data[oscar_key]["data"] = search.build_table(oscar_data[oscar_key].results, do_init = false);
+							}else {
+								// save current state of oscar
+								oscar_data[current_oscar_tab].data = search.get_search_data();
+								// load new oscar data
+								search.change_search_data(oscar_data[oscar_key].data);
+							}
 					}
 				}
 				current_oscar_tab = oscar_key;
 		}
 
-		function assign_oscar_results(oscar_key, results){
+		function assign_oscar_results(oscar_key, results, cat_conf){
 
 			pending_oscar_calls = pending_oscar_calls - 1;
-
-			if (results.results.bindings.length == 0) {
+			if (results.length == 0) {
 				//get rule key from regex
 				var rule_key = "";
 				reg = /rule=(.+?)(?=&bc|$)/g;
@@ -454,12 +457,27 @@ var browser = (function () {
 					oscar_content.splice(index_oscar_obj, 1);
 				}
 			}else {
-				oscar_data[oscar_key]["results"] = results;
+				//the header
+				var head_list = [];
+				for (var key_name in results[0]) {
+					head_list.push(key_name);
+				}
+				oscar_data[oscar_key]["results"] = true;
+				oscar_data[oscar_key]["data"]["cat_conf"] = JSON.parse(JSON.stringify(cat_conf));
+				oscar_data[oscar_key]["data"]["table_conf"] = JSON.parse(JSON.stringify(results));
+
+				//var data_res = {'head':{'vars': head_list},'results':{'bindings':results}};
+				//oscar_data[oscar_key]["data"]["table_conf"]["data"] = JSON.parse(JSON.stringify(data_res));
+				//oscar_data[oscar_key]["data"]["table_conf"]["filters"]["data"] = JSON.parse(JSON.stringify(data_res));
+				//oscar_data[oscar_key]["data"]["table_conf"]["view"]["data"] = JSON.parse(JSON.stringify(data_res));
+
 			}
+
 			//decomment this to add oscar menu element in any case
 			//oscar_data[oscar_key]["results"] = results;
 
 			if (pending_oscar_calls == 0) {
+				console.log(oscar_data);
 				//build oscar menu
 				b_htmldom.build_oscar(resource_res, {"oscar": oscar_content});
 			}
@@ -473,6 +491,7 @@ var browser = (function () {
 				get_ext_data: get_ext_data,
 				//call back functions
 				assign_oscar_results: assign_oscar_results,
+				click_for_oscar: click_for_oscar,
 				update_grs_data: update_grs_data
 		 }
 })();
@@ -979,7 +998,7 @@ var b_htmldom = (function () {
 
 				//click first elem of OSCAR menu
 				//menu_obj.active_li.click();
-				menu_obj.active_li.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, view: window}));
+				menu_obj.active_li.dispatchEvent(new MouseEvent('click', {}));
 			}
 		}
 		function _build_menu(oscar_content, data_obj, config_mod, def_menu_index = 0){
@@ -992,7 +1011,7 @@ var b_htmldom = (function () {
 				var query = data_obj[oscar_obj.query_text].value;
 				var rule = oscar_obj.rule;
 
-				a_elem.href = "javascript:browser.call_oscar('"+query+"','"+rule+"','browser.assign_oscar_results','"+[]+"','"+i+"')";
+				a_elem.href = "javascript:browser.click_for_oscar('"+query+"','"+rule+"','"+[]+"','"+i+"')";
 				a_elem.innerHTML = oscar_obj["label"];
 				var is_active = "";
 				if (i == def_menu_index) {
