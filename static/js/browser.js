@@ -312,7 +312,7 @@ var browser = (function () {
 					oscar_data[oscar_key] = {};
 					oscar_data[oscar_key]["data"] = search.get_search_data(true, oscar_entry["config_mod"]);
 				}
-				console.log(JSON.parse(JSON.stringify(oscar_data)));
+				//console.log(JSON.parse(JSON.stringify(oscar_data)));
 
 				for (var i = 0; i < oscar_content.length; i++) {
 					var oscar_entry = oscar_content[i];
@@ -440,10 +440,10 @@ var browser = (function () {
 				current_oscar_tab = oscar_key;
 		}
 
-		function assign_oscar_results(oscar_key, results, cat_conf){
+		function assign_oscar_results(oscar_key, results, cat_conf, empty_res){
 
 			pending_oscar_calls = pending_oscar_calls - 1;
-			if (results.length == 0) {
+			if (empty_res) {
 				//get rule key from regex
 				var rule_key = "";
 				reg = /rule=(.+?)(?=&bc|$)/g;
