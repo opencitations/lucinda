@@ -301,6 +301,11 @@ var browser = (function () {
 		function _build_oscar_table(one_result,contents) {
 			var oscar_content = contents['oscar'];
 			if (oscar_content != undefined) {
+				if ('oscar_conf' in contents) {
+					if ('progress_loader' in contents['oscar_conf']) {
+						b_htmldom.loader(true, progress_loader = contents['oscar_conf']['progress_loader']);
+					}
+				}
 				pending_oscar_calls = oscar_content.length;
 
 				for (var i = 0; i < oscar_content.length; i++) {
@@ -477,7 +482,10 @@ var browser = (function () {
 			//oscar_data[oscar_key]["results"] = results;
 
 			if (pending_oscar_calls == 0) {
-				console.log(oscar_data);
+
+				b_htmldom.loader(false);
+
+				//console.log(oscar_data);
 				//build oscar menu
 				b_htmldom.build_oscar(resource_res, {"oscar": oscar_content});
 			}
@@ -766,6 +774,7 @@ var b_util = (function () {
 var b_htmldom = (function () {
 
 	var oscar_container = document.getElementById("search");
+	var loader_container = document.getElementById("loader_container");
 	var browser_container = document.getElementById("browser");
 	var info_container = document.getElementById("browser_info");
 	var extra_container = document.getElementById("browser_extra");
@@ -1166,6 +1175,66 @@ var b_htmldom = (function () {
 	}
 
 
+	/*creates the loader panel (while waiting for the results)*/
+	function loader(build_bool, progress_loader = null, query_label=null){
+
+		if (header_container != null) {
+			if (build_bool) {
+				if (query_label != null) {
+					retain_box_value(input_box_container,query_label);
+				}
+
+				var abort_obj = progress_loader.abort;
+				var str_html_abort = "";
+				if (abort_obj != undefined) {
+					str_html_abort = "<p><div id='abort_oscar' class='abort-oscar'><a class='allert-a' href="+abort_obj.href_link+">"+abort_obj.title+"</a></div></p>";
+				}
+
+				var title_obj = progress_loader.title;
+				var str_html_title = "";
+				if (title_obj != undefined) {
+					str_html_title = "<p><div id='oscar_loader' class='oscarLoader'>"+title_obj+"</div></p>";
+				}
+
+				var subtitle_obj = progress_loader.subtitle;
+				var str_html_subtitle = "";
+				if (subtitle_obj != undefined) {
+					str_html_subtitle = "<p><div class='oscarLoader subtitle'>"+subtitle_obj+"</div></p>";
+				}
+
+				var spinner_obj = progress_loader.spinner;
+				var str_html_spinner = "";
+				if ((spinner_obj != undefined) && (spinner_obj == true)){
+					str_html_spinner = "<p><div class='oscarLoader loader-spinner'></div></p>";
+				}
+
+				var str_html = str_html_title + str_html_subtitle + str_html_spinner + str_html_abort;
+				parser = new DOMParser()
+				//var dom = parser.parseFromString(str_html, "text/xml").firstChild;
+				//header_container.appendChild(dom);
+
+				//extra_container.innerHTML = str_html;
+				if (loader_container == null) {
+					loader_container = document.createElement('div');
+					loader_container.id = "loader_container";
+    			loader_container.innerHTML = str_html;
+					oscar_container.parentNode.insertBefore(loader_container,oscar_container);
+				}else {
+					loader_container.innerHTML = str_html;
+				}
+
+
+			}else {
+				//var element = document.getElementById("search_loader");
+				//element.parentNode.removeChild(element);
+				if (loader_container != null) {
+					loader_container.innerHTML = "";
+				}
+			}
+		}
+	}
+
+
 	return {
 		handle_menu: handle_menu,
 		enable_oscar_menu: enable_oscar_menu,
@@ -1174,6 +1243,7 @@ var b_htmldom = (function () {
 		build_body: build_body,
 		build_oscar: build_oscar,
 		update_oscar_li: update_oscar_li,
-		build_grs: build_grs
+		build_grs: build_grs,
+		loader: loader
 	}
 })();

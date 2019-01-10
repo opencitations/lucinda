@@ -158,6 +158,14 @@ body.lucinda-cover{
   background-color: transparent;
 }
 
+#loader_container{
+  margin-top: 1.5%;
+}
+.oscarLoader{
+ color: grey;
+ font-size:130%;
+}
+
 /*re-define search css components*/
 /*modify search css*/
 #search{
@@ -182,3 +190,20 @@ body.lucinda-cover{
   width: 500px;
   height: 500px;
 }
+
+/* Loader Spinner */
+/* ================================= */
+
+.loader-spinner {
+    border: 12px solid #f3f3f3; /* Light grey */
+    border-top: 12px solid var(--main-bg-color); /* Blue */
+    border-radius: 50%;
+    width: 70px;
+    height: 70px;
+    animation: spin 2s linear infinite;
+    margin:0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }

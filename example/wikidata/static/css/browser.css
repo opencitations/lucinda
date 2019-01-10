@@ -158,6 +158,14 @@ body.lucinda-cover{
   background-color: transparent;
 }
 
+#loader_container{
+  margin-top: 1.5%;
+}
+.oscarLoader{
+ color: grey;
+ font-size:130%;
+}
+
 /*re-define search css components*/
 /*modify search css*/
 #search{
