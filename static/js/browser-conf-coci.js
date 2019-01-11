@@ -79,12 +79,12 @@ var browser_conf = {
             },*/
             "header": [
                 {"classes":["40px"]},
-                {"fields": ["citing_doi","FREE-TEXT","cited_doi"], "values":[null," cites ", null], "classes":["header-title text-success","metric-entry text-capitalize mark","header-title text-danger"]},
+                {"fields": ["citing_doi","FREE-TEXT","cited_doi"], "values":[null," cites ", null], "classes":["header-title text-success","metric-entry text-capitalize mark","header-title text-info"]},
                 //{"fields": ["subtitle"], "classes":["sub-header-title"]},
                 {"classes":["10px"]},
                 {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Citing entity: ", "call_crossref_4citation_citing"], "classes": ["subtitle","text-success"]},
                 {"classes":["8px"]},
-                {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Cited entity: ", "call_crossref_4citation_cited"], "classes": ["subtitle","text-danger"]}
+                {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Cited entity: ", "call_crossref_4citation_cited"], "classes": ["subtitle","text-info"]}
 
                 //{"fields": ["author"], "concat_style":{"author": "inline"}}
             ],

@@ -228,8 +228,8 @@ var browser_conf = {
                 "config_mod" : [
       							{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
       							{"key":"page_limit_def" ,"value":20},
-      							{"key":"categories.[[name,document]].fields.[[title,Year]].sort.default" ,"value":{"order": "desc"}}
-                    //{"key":"progress_loader.visible" ,"value":false}
+      							{"key":"categories.[[name,document]].fields.[[title,Year]].sort.default" ,"value":{"order": "desc"}},
+                    {"key":"progress_loader.visible" ,"value":false}
       					]
               }
             ]
