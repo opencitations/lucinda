@@ -56,6 +56,8 @@ var browser = (function () {
 		call the sparql endpoint and do the query*/
 		function do_sparql_query(resource_iri, given_category = null, exclude_list = [], call_fun = null){
 
+
+
 			//var header_container = document.getElementById("browser_header");
 
 			if (resource_iri != "") {
@@ -95,7 +97,7 @@ var browser = (function () {
 										//try look for another category
 										var new_exclude_list = exclude_list;
 										new_exclude_list.push(category);
-										do_sparql_query(resource_iri, exclude_list = new_exclude_list)
+										do_sparql_query(resource_iri, given_category= given_category, exclude_list = new_exclude_list, call_fun = call_fun);
 									}else {
 											if (call_fun != null) {
 												Reflect.apply(call_fun,undefined,[res_data,category]);
