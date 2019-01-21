@@ -118,6 +118,19 @@ var browser_conf = {
                   "link": "/search"
                 }
             },
+            "oscar_conf": {
+                "progress_loader":{
+                          "visible": false,
+                          "spinner": false,
+                          "title":"Loading the list of Citations and References ...",
+                          //"subtitle":"Be patient - this might take several seconds!"
+                          //"abort":{"title":"Abort", "href_link":""}
+                        },
+                "timeout":{
+                  "value": 90000,
+                  "link": "/search"
+                }
+            },
             "oscar": [
               {
                 "query_text": "my_iri",
@@ -211,7 +224,7 @@ var browser_conf = {
                 "progress_loader":{
                           "visible": false,
                           "spinner": false,
-                          "title":"Loading the list of Citations and References ...",
+                          "title":"Loading the list of Documents ...",
                           //"subtitle":"Be patient - this might take several seconds!"
                           //"abort":{"title":"Abort", "href_link":""}
                         },

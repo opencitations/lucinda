@@ -202,7 +202,7 @@ var browser_conf = {
                 "progress_loader":{
                           "visible": false,
                           "spinner": false,
-                          "title":"Loading the list of Citations and References ...",
+                          "title":"Loading the list of Documents ...",
                           //"subtitle":"Be patient - this might take several seconds!"
                           //"abort":{"title":"Abort", "href_link":""}
                         },
