@@ -9,13 +9,10 @@ var browser = (function () {
 		var oscar_content = null;
 		var current_oscar_tab = null;
 		var ext_data = {};
-		var grs_data = {};
-		/*
-		var call_functions = {
-			'oscar_table': browser.assign_oscar_results,
-			'view': browse.update_grs_data
-		}
-		*/
+		var ext_source_data_post = {};
+		var ext_source_data = {};
+
+		var contents = null;
 
 		/*it's a document or an author*/
 		function _get_category(resource_text, exclude_list = []) {
@@ -151,7 +148,7 @@ var browser = (function () {
 			var links = browser_conf_json.categories[category]["links"];
 			var none_values = browser_conf_json.categories[category]["none_values"];
 			var text_mapping = browser_conf_json.categories[category]["text_mapping"];
-			var ext_data_obj = browser_conf_json.categories[category]["ext_data"];
+			var ext_sources = browser_conf_json.categories[category]["ext_sources"];
 
 			var data_none_vals = _init_none_vals(res_data.results.bindings, none_values);
 			//console.log(data_none_vals);
@@ -160,22 +157,21 @@ var browser = (function () {
 			var one_result = data_grouped[0];
 			one_result = b_util.text_mapping(one_result, text_mapping);
 			resource_res = JSON.parse(JSON.stringify(one_result));
-			_exec_ext_data(one_result, ext_data_obj);
-			//console.log(ext_data);
-			//console.log(JSON.parse(JSON.stringify(data_grouped)));
 
-			var contents = browser_conf_json.categories[category]["contents"];
+			contents = browser_conf_json.categories[category]["contents"];
 			if (contents["oscar"] != undefined) {
 				oscar_content = contents["oscar"];
 			}
 
-			b_htmldom.build_body(one_result,contents );
+			b_htmldom.build_body(one_result,contents);
 
 
-
+			//Execute external sources Calls
+			_exec_ext_sources_calls(one_result, ext_sources);
 
 			//check graphs elements
-			_build_views(one_result, contents);
+
+			//_build_views(one_result, contents);
 
 
 			_build_oscar_table(one_result,contents);
@@ -184,31 +180,23 @@ var browser = (function () {
 
 			//search.do_sparql_query("search?text="+one_result[oscar_tab["query_text"]].value+"&rule="+oscar_tab["rule"], config_mod);
 
-
 		}
 
-		function _build_views(one_result, contents) {
-			var view_obj = contents["view"];
-			if (view_obj != undefined) {
-				for (gr_id in view_obj) {
-					var gr_obj = view_obj[gr_id];
+		function _exec_ext_sources_calls(one_result, ext_sources) {
+			if (ext_sources != undefined) {
+				for (var i = 0; i < ext_sources.length; i++) {
+					var source_param = ext_sources[i];
 
-					//gr internal fields
-					var source = gr_obj['source'];
-					var fields = gr_obj['fields'];
-					var respects = gr_obj['respects'];
-					var graph = gr_obj['graph'];
-
-					switch (source.name) {
-						case "oscar":
-							//build the textual query
-							var param = source.param;
-							var my_query_text = __build_text_query(one_result, param.query_text);
-							grs_data[my_query_text] = {'gr_id':gr_id,'data':null, 'fields':fields, 'respects':respects, 'graph':graph};
-							search.do_sparql_query(my_query_text, null ,[], true, browser.update_grs_data);
-							break;
-						default:
-							break;
+					//check if I have already that result
+					if (source_param.id in ext_source_data) {
+							if (source_param.id in ext_source_data_post) {
+									browser.target_ext_call(source_param, ext_source_data_post[source_param.id].data);
+							}else{
+									Reflect.apply(source_param.handle,undefined,[ext_source_data[source_param.id]]);
+							}
+					}else {
+							var call_url = __build_text_query(one_result, source_param.call);
+							b_util.httpGetAsync(call_url, source_param.id, source_param.handle, source_param);
 					}
 				}
 			}
@@ -239,61 +227,55 @@ var browser = (function () {
 			}
 		}
 
-		function update_grs_data(oscar_key, results){
-			if (oscar_key in grs_data) {
-					grs_data[oscar_key]['data'] = results;
-					grs_data[oscar_key]['data'] = __get_values_with_rist(
-						grs_data[oscar_key]['data'],
-						grs_data[oscar_key]['fields'],
-						grs_data[oscar_key]['respects']
-					)
-					console.log(grs_data);
+		function update_ext_source_data(key,result) {
+			ext_source_data[key] = result;
+		}
+
+		function target_ext_call(call_param, data){
+
+			var splits_dot = call_param.targets.split('.');
+			console.log(splits_dot);
+			var index = 0;
+			var target_type = null;
+			var target_id = null;
+
+			if (splits_dot.length > 1) {
+				target_type = splits_dot[0];
+				index = 1;
+			}
+			var myRegexp = /\[\[(.*)\]\]/g;
+			var match = myRegexp.exec(splits_dot[index]);
+			if (match) {
+				target_id = match[1];
+			}
+
+
+			var content_param = search_content_item(target_type,target_id);
+			ext_source_data_post[call_param.id] = {};
+			ext_source_data_post[call_param.id]['data'] = data;
+			ext_source_data_post[call_param.id]['param'] = content_param;
+
+			switch (target_type) {
+				case 'view':
+					var ext_data_id = call_param.id;
+					var view_id = target_id;
+
 					//build the graphic
-					b_htmldom.build_grs(grs_data[oscar_key]['data'], grs_data[oscar_key]['graph']);
+					b_htmldom.build_a_view_content(view_id, ext_data_id);
+					break;
 			}
+		}
 
-			function __get_values_with_rist(dataarr_obj, fields, respects) {
-
-				var ret_vals = {};
-				var respects_index = {};
-
-				//init both dict
-				for (var i = 0; i < fields.length; i++) {
-					ret_vals[fields[i]] = [];
-				}
-				for (var i = 0; i < respects.length; i++) {
-					if (respects[i].param in respects_index) {
-						respects_index[respects[i].param].push(respects[i].func);
-					}else {
-						respects_index[respects[i].param] = [respects[i].func];
+		function search_content_item(type,id) {
+			if (contents[type] != undefined) {
+				for (var i = 0; i < contents[type].length; i++) {
+					var item = contents[type][i];
+					if (item.id = id) {
+						return item;
 					}
 				}
-
-				// check if all fields respect restrictions
-				for (var i = 0; i < dataarr_obj.length; i++) {
-					var dataobj = dataarr_obj[i];
-					var addit = true;
-					for (var key_field in dataobj) {
-							if (key_field in respects_index) {
-								for (var j = 0; j < respects_index[key_field].length; j++) {
-									var func_i = respects_index[key_field][j];
-									addit = addit && Reflect.apply(func_i,undefined,[dataobj[key_field].value]);
-								}
-							}
-					}
-
-					//add all row
-					if (addit) {
-						for (var key_field in dataobj) {
-							if (key_field in ret_vals) {
-								ret_vals[key_field].push(dataobj[key_field].value);
-							}
-						}
-					}
-				}
-
-				return ret_vals;
 			}
+			return -1;
 		}
 
 		function _update_page(){
@@ -328,43 +310,12 @@ var browser = (function () {
 			}
 		}
 
-		function get_ext_data() {
-			return ext_data;
+		function get_ext_source_data_post() {
+			return ext_source_data_post;
 		}
 
-		/*retrieve the externa data*/
-		function _exec_ext_data(obj_vals, ext_data_obj){
-			//console.log(ext_data_obj,obj_vals);
-			if (ext_data_obj != undefined) {
-				for (var key in ext_data_obj) {
-
-					var res = -1;
-					var func_obj = ext_data_obj[key];
-					//my func name
-					var func_name = func_obj['name'];
-
-					//my func params
-					var func_param = []
-					var func_param_fields = func_obj['param']['fields'];
-					var func_param_values = func_obj['param']['values'];
-					for (var j = 0; j < func_param_fields.length; j++) {
-						var p_field = func_param_fields[j];
-						if ( p_field == "FREE-TEXT"){
-							func_param.push(func_param_values[j]);
-						}else {
-							if (obj_vals.hasOwnProperty(p_field)) {
-								if (! b_util.is_undefined_key(func_obj,"concat_style."+String(p_field))) {
-										func_param.push(b_util.build_str(p_field, obj_vals[p_field],func_obj.concat_style[p_field], include_link= false));
-								}else {
-										func_param.push(b_util.build_str(p_field, obj_vals[p_field],null, include_link= false));
-								}
-							}
-						}
-					}
-					res = Reflect.apply(func_name,undefined,func_param);
-					ext_data[key] = res;
-				}
-			}
+		function get_view_data() {
+			return view_data;
 		}
 
 		/*map the fields with their corresponding links*/
@@ -499,15 +450,61 @@ var browser = (function () {
 				build_extra_sec: build_extra_sec,
 				do_sparql_query: do_sparql_query,
 				get_ext_data: get_ext_data,
+				get_ext_source_data_post: get_ext_source_data_post,
+				get_view_data: get_view_data,
 				//call back functions
 				assign_oscar_results: assign_oscar_results,
 				click_for_oscar: click_for_oscar,
-				update_grs_data: update_grs_data
+				target_ext_call: target_ext_call,
+				update_ext_source_data: update_ext_source_data
 		 }
 })();
 
 
 var b_util = (function () {
+
+	function httpGetAsync(theUrl, key, callback, call_param = null){
+		var xhr = new XMLHttpRequest();
+		xhr.open('GET', theUrl);
+		xhr.onload = function() {
+		    if (xhr.status === 200) {
+						var result = {};
+						result['call_url'] = theUrl;
+						result['key'] = key;
+						result['call_param'] = call_param;
+
+						//BUILD the data
+						//convert to format
+					  result['data'] = convert_to_format(xhr.responseText, is_in_and_defined(call_param,'format'));
+						//get the subset fields
+						var fields = is_in_and_defined(call_param,'fields');
+						if (fields != -1) {
+							var new_data = {}
+							for (var i = 0; i < fields.length; i++) {
+								new_data[fields[i]] = result['data'][fields[i]];
+							}
+							result['data'] = new_data;
+						}
+						//check if respect restrictions
+						var respects = is_in_and_defined(call_param,'respects');
+						if (respects != -1) {
+							for (var i = 0; i < respects.length; i++) {
+									result['data'] = Reflect.apply(respects[i],undefined,[{'data':result['data']}]);
+							}
+						}
+
+						//update_ext_source_data
+						browser.update_ext_source_data(key, result);
+						//call the handle function
+						Reflect.apply(callback,undefined,[result]);
+		    }
+		    else {
+		        console.log("Error: "+xhr.status);
+						return -1;
+		    }
+		};
+		xhr.send();
+	}
 
 	/*get the value of obj[key]
 	key is a string with inner keys also
@@ -760,7 +757,30 @@ var b_util = (function () {
 		}
 	}
 
+	function is_in_and_defined(obj,key) {
+		if (key in obj) {
+	    if (obj[key] != null){
+				return obj[key];
+	    }
+	  }
+		return -1;
+	}
+
+	function convert_to_format(str_obj,format) {
+		switch (format) {
+			case 'json':
+				return JSON.parse(str_obj);
+				break;
+			default:
+				return str_obj;
+				break;
+		}
+	}
+
 	return {
+		convert_to_format: convert_to_format,
+		is_in_and_defined: is_in_and_defined,
+		httpGetAsync: httpGetAsync,
 		index_in_arrjsons: index_in_arrjsons,
 		get_obj_key_val: get_obj_key_val,
 		text_mapping: text_mapping,
@@ -783,7 +803,7 @@ var b_htmldom = (function () {
 	var header_container = document.getElementById("browser_header");
 	var details_container = document.getElementById("browser_details");
 	var metrics_container = document.getElementById("browser_metrics");
-	var gr_bars_containers = document.getElementsByClassName("gr");
+	var view_container = document.getElementById("browser_view");
 
 	function _init_tr(obj_vals, content_entry){
 		var tr = document.createElement("tr");
@@ -1072,107 +1092,91 @@ var b_htmldom = (function () {
 	}
 
 	//new charts
-	function build_grs(data_obj, gr_options){
+	function build_a_view_content(view_key, ext_data_id){
 
-		var arr_grs = _get_all_graphs();
-		if (arr_grs.length == 0) {
+		if (view_container == undefined) {
 			return -1;
 		}
+		var a_view_data = browser.get_ext_source_data_post()[ext_data_id];
+		console.log(a_view_data);
 
-		for (var i = 0; i < arr_grs.length; i++) {
 
-			if (arr_grs[i]['gr_style'] != gr_options['style']) {
-				continue;
+		//build the html DOM
+		var a_view_div = _build_a_view_content(view_key, a_view_data);
+		var a_view_dom = _populate_a_view_dom(view_key, a_view_data, a_view_div);
+
+		function _build_a_view_content(view_key, a_view_data) {
+
+			var view_div = document.createElement("div");        // Create a <button> element
+			view_div.setAttribute("id", view_key);
+			if ('class' in a_view_data.param) {
+				view_div.setAttribute("class", a_view_data.param['class']);
 			}
+			view_container.appendChild(view_div);
+			return view_div;
+		}
+		function _populate_a_view_dom(view_key, a_view_data, a_view_div){
+			var a_view_data_param = a_view_data.param;
+			switch (a_view_data_param.type) {
+				case 'chart':
+					switch (a_view_data_param.style) {
+						case 'bars':
+						//create it
+						var canavas_dom = document.createElement("canvas");
+						canavas_dom.setAttribute("id", view_key+"_canavas");
+						if ('width' in a_view_data_param) {
+							canavas_dom.style.width =  a_view_data_param.width;
+						}
+						if ('height' in a_view_data_param) {
+							canavas_dom.style.height =  a_view_data_param.height;
+						}
+						a_view_div.appendChild(canavas_dom);
+						__create_chart_bars_dom(a_view_data, a_view_data_param, view_key);
 
-			var gr_data_normalized = _normalize_gr_data(data_obj, gr_options);
-			var canavas_dom = null;
-			switch (gr_options['style']) {
-				case 'bars':
-					canavas_dom = _build_bars_gr(arr_grs[i], gr_data_normalized);
+						break;
+					}
 					break;
 				default:
-			}
-
-			gr_bars_containers[arr_grs[i].id].appendChild(canavas_dom);
-		}
-
-		function _get_all_graphs() {
-
-			var arr_grs = [];
-			for (var i = 0; i < gr_bars_containers.length; i++) {
-				var obj_gr = {};
-
-				var gr_bar_container_i = gr_bars_containers[i];
-
-				obj_gr['id'] = i;
-				obj_gr['category'] =  gr_bar_container_i.getAttribute('category');
-				obj_gr['view'] =  gr_bar_container_i.getAttribute('view');
-				obj_gr['gr_style'] =  gr_bar_container_i.getAttribute('gr_style');
-				arr_grs.push(obj_gr);
-			}
-
-			return arr_grs;
-		}
-
-		function _normalize_gr_data(data_obj, gr_options) {
-			var gr_data = {};
-			switch (gr_options.style) {
-				case 'bars':
-					//the data
-					for (var datakey in gr_options.data) {
-						gr_data[datakey] = data_obj[gr_options.data[datakey]];
-					}
-					//other options
-					if ('label' in gr_options) {
-						gr_data['label'] = gr_options['label'];
-					}
-					if ('background_color' in gr_options) {
-					}
-					if ('border_color' in gr_options) {
-					}
-					if ('borderWidth' in gr_options) {
-					}
 					break;
-
-				default:
 			}
-			return gr_data;
-		}
 
-		function _build_bars_gr(gr_obj, gr_data) {
+			function __create_chart_bars_dom(a_view_data, param, view_key) {
 
-			var canavas_dom = document.createElement("canvas");
-			var ctx = canavas_dom.getContext('2d');
+				var canavas_dom = document.getElementById("myChart");
+				canavas_dom = document.getElementById(view_key+"_canavas");
 
-			var opt_obj = {'label':""};
-			if ('label' in gr_data) {
-				opt_obj['label'] = gr_data['label'];
+				var ctx = canavas_dom.getContext('2d');
+				var data = a_view_data.data;
+
+				var myChart = new Chart(ctx, {
+				    type: 'bar',
+				    data: {
+				        labels: data.x,
+				        datasets: [{
+				            label: param.label,
+				            data: data.y,
+				            //backgroundColor: [],
+				            //borderColor: [],
+				            borderWidth: 1
+				        }]
+				    },
+				    options: {
+								//responsive: true,
+								//maintainAspectRatio: false,
+				        scales: {
+				            yAxes: [{
+												barPercentage: 0.2,
+				                ticks: {
+				                    beginAtZero:true
+				                }
+				            }]
+				        }
+				    }
+				});
+
+				return canavas_dom;
+
 			}
-			var myChart = new Chart(ctx, {
-			    type: 'bar',
-			    data: {
-			        labels: gr_data.x,
-			        datasets: [{
-			            label: opt_obj.label,
-			            data: gr_data.y,
-			            //backgroundColor: [],
-			            //borderColor: [],
-			            borderWidth: 1
-			        }]
-			    },
-			    options: {
-			        scales: {
-			            yAxes: [{
-			                ticks: {
-			                    beginAtZero:true
-			                }
-			            }]
-			        }
-			    }
-			});
-
-			return canavas_dom;
 		}
 	}
 
@@ -1245,7 +1249,7 @@ var b_htmldom = (function () {
 		build_body: build_body,
 		build_oscar: build_oscar,
 		update_oscar_li: update_oscar_li,
-		build_grs: build_grs,
+		build_a_view_content: build_a_view_content,
 		loader: loader
 	}
 })();
