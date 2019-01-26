@@ -53,13 +53,8 @@ var browser = (function () {
 		call the sparql endpoint and do the query*/
 		function do_sparql_query(resource_iri, given_category = null, exclude_list = [], call_fun = null){
 
-
-
 			//var header_container = document.getElementById("browser_header");
-
 			if (resource_iri != "") {
-
-				//resource = "https://w3id.org/oc"+"/corpus/"+resource_iri;
 
 				//initialize and get the browser_config_json
 				browser_conf_json = browser_conf;
@@ -72,14 +67,9 @@ var browser = (function () {
 					}
 				}
 
-
 				//build the sparql query in turtle format
 				var sparql_query = _build_turtle_prefixes() + _build_turtle_query(browser_conf_json.categories[category].query);
-				//since its a resource iri we put it between < >
-				//var global_r = new RegExp("[[VAR]]", "g");
-				//sparql_query = sparql_query.replace(global_r, resource_iri);
 				sparql_query = sparql_query.replace(/\[\[VAR\]\]/g, resource_iri);
-				//console.log(sparql_query);
 
 				//use this url to contact the sparql_endpoint triple store
 				var query_contact_tp =  String(browser_conf_json.sparql_endpoint)+"?query="+ encodeURIComponent(sparql_query) +"&format=json";
@@ -169,16 +159,8 @@ var browser = (function () {
 			//Execute external sources Calls
 			_exec_ext_sources_calls(one_result, ext_sources);
 
-			//check graphs elements
-
-			//_build_views(one_result, contents);
-
-
+			//Build OSCAR table
 			_build_oscar_table(one_result,contents);
-
-			//console.log(document.getElementById("browser"));
-
-			//search.do_sparql_query("search?text="+one_result[oscar_tab["query_text"]].value+"&rule="+oscar_tab["rule"], config_mod);
 
 		}
 
@@ -187,16 +169,33 @@ var browser = (function () {
 				for (var i = 0; i < ext_sources.length; i++) {
 					var source_param = ext_sources[i];
 
+					if (!(source_param.id in ext_source_data)) {
+						ext_source_data[source_param.id] = {};
+						ext_source_data[source_param.id]['pending'] = 0;
+					}
+					ext_source_data[source_param.id]['pending'] += 1;
+
+
 					//check if I have already that result
-					if (source_param.id in ext_source_data) {
-							if (source_param.id in ext_source_data_post) {
-									browser.target_ext_call(source_param, ext_source_data_post[source_param.id].data);
-							}else{
-									Reflect.apply(source_param.handle,undefined,[ext_source_data[source_param.id]]);
-							}
+					var flag_call_service = true;
+					if ('data' in ext_source_data[source_param.id]) {
+						if (ext_source_data[source_param.id]['data'] != null) {
+							flag_call_service = false;
+						}
+					}
+
+					//if I dont have the result call the service
+					if (flag_call_service) {
+						var call_url = __build_text_query(one_result, source_param.call);
+						b_util.httpGetAsync(call_url, source_param.id, source_param.handle, source_param);
 					}else {
-							var call_url = __build_text_query(one_result, source_param.call);
-							b_util.httpGetAsync(call_url, source_param.id, source_param.handle, source_param);
+						//I have a result now check if I post processed it
+						//Check if post processing has been done
+						if (source_param.id in ext_source_data_post) {
+								browser.target_ext_call(source_param, ext_source_data_post[source_param.id].data);
+						}else{
+								Reflect.apply(source_param.handle,undefined,[ext_source_data[source_param.id].data]);
+						}
 					}
 				}
 			}
@@ -228,7 +227,7 @@ var browser = (function () {
 		}
 
 		function update_ext_source_data(key,result) {
-			ext_source_data[key] = result;
+			ext_source_data[key]['data'] = result;
 		}
 
 		function target_ext_call(call_param, data){
