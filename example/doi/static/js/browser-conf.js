@@ -32,6 +32,16 @@ var browser_conf = {
               "none_values": {},
               "ext_sources": [
                   {
+                    'name': 'crossref',
+                    'id': 'crossref_title',
+                    'call': 'https://api.crossref.org/works/[[?doi]]',
+                    'format': 'json',
+                    'handle': crossref_handle_title,
+                    'targets': 'header.[[crossref_title_val]]',
+                    'fields': ['message.title'],
+                    //"respects": []
+                  },
+                  {
                     'name': 'oc_ramose',
                     'id': 'cits_in_time',
                     'call': 'http://opencitations.net/index/coci/api/v1/citations/[[?doi]]',
@@ -41,14 +51,25 @@ var browser_conf = {
                     //'fields': [],
                     //"respects": []
                   },
+                  {
+                    'name': 'crossref',
+                    'id': 'crossref_authors',
+                    'call': 'https://api.crossref.org/works/[[?doi]]',
+                    'format': 'json',
+                    'handle': crossref_handle_author,
+                    'targets': 'header.[[crossref_authors_val]]',
+                    'fields': ['message.author'],
+                    //"respects": []
+                  }
               ],
 
               "contents":{
                   "header": [
                       {"classes":["40px"]},
-                      {"fields": ["doi"], "values":[null], "classes":["header-title text-success"]},
+                      {"fields": ["FREE-TEXT"], "values": ["Loading ..."], "id":["crossref_title_val"], "classes": ["header-title text-success"]},
+                      {"fields": ["FREE-TEXT", "FREE-TEXT"], "values": ["Authors: ", "Loading ..."], "id":[null,"crossref_authors_val"], "classes": ["subtitle","text-success"]},
                       {"classes":["8px"]},
-                      {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Reference: ", "crossref_ref"], "classes": ["subtitle","text-success"]},
+                      {"fields": ["doi"], "values":[null], "classes":["subtitle"]},
                   ],
                   "view": [
                               {
@@ -68,6 +89,42 @@ var browser_conf = {
               }
         }
     }
+}
+
+function crossref_handle_author(param) {
+  var list_authors = param.data['message.author'];
+
+  var str_authors = "";
+  if (list_authors != undefined) {
+    for (var i = 0; i < list_authors.length; i++) {
+      var a_author = list_authors[i];
+      var flag_found = false;
+      if ('given' in a_author) {
+        str_authors = str_authors + a_author['given'] + " ";
+        flag_found = true;
+      }
+      if ('family' in a_author) {
+        str_authors = str_authors + a_author['family'];
+        flag_found = true;
+      }
+      if ((flag_found) && (i < list_authors.length-1)) {
+        str_authors = str_authors + ", ";
+      }
+    }
+  }
+  var data = str_authors;
+  browser.target_ext_call(param.call_param,data);
+}
+
+function crossref_handle_title(param) {
+  var title = param.data['message.title'];
+  var str_title = "";
+  if (title != undefined) {
+    str_title = title[0];
+  }
+
+  var data = str_title;
+  browser.target_ext_call(param.call_param,data);
 }
 
 function oc_ramose_handle_dates(param) {
@@ -129,74 +186,10 @@ function call_coci_oscar(param, fun_view_callbk) {
    return result_data;
 }
 
-function call_coci_ramose(str_doi, field) {
-  var call_ramose_api_metadata = "http://opencitations.net/index/coci/api/v1/metadata/";
-  var call_full = call_ramose_api_metadata + encodeURIComponent(str_doi);
-  var result_data = "";
-  $.ajax({
-        dataType: "json",
-        url: call_full,
-        type: 'GET',
-        async: false,
-        success: function( res_obj ) {
-            if (field == 1) {
-              result_data = res_obj[0];
-            }else {
-              if (!b_util.is_undefined_key(res_obj[0],field)) {
-                result_data = b_util.get_obj_key_val(res_obj[0],field);
-              }
-            }
-        }
-   });
-   return result_data;
-
-}
-
-//"FUNC" {"name": call_crossref, "param":{"fields":[],"vlaues":[]}}
-function call_crossref(str_doi, field){
-  var call_crossref_api = "https://api.crossref.org/works/";
-  var call_url =  call_crossref_api+ encodeURIComponent(str_doi);
-
-  var result_data = "";
-  $.ajax({
-        dataType: "json",
-        url: call_url,
-        type: 'GET',
-        async: false,
-        success: function( res_obj ) {
-            if (field == 1) {
-              result_data = res_obj;
-            }else {
-              if (!b_util.is_undefined_key(res_obj,field)) {
-                result_data = b_util.get_obj_key_val(res_obj,field);
-              }
-            }
-        }
-   });
-   return result_data;
-}
-function call_crossref_4citation(str_doi){
-  var call_crossref_api = "https://citation.crosscite.org/format?doi=";
-  var suffix = "&style=apa&lang=en-US";
-  var result = "";
-
-  if (str_doi != undefined) {
-    var call_url =  call_crossref_api+str_doi+suffix;
-    //var result_data = "...";
-    $.ajax({
-          url: call_url,
-          type: 'GET',
-          async: false,
-          success: function( res ) {
-            result = res;
-          }
-     });
-  }
-  return result;
-}
 function decodeURIStr(str) {
   return decodeURIComponent(str);
 }
+
 function timespan_translate(str) {
   var new_str = "";
   var years = 0;

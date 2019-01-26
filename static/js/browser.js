@@ -257,11 +257,12 @@ var browser = (function () {
 
 			switch (target_type) {
 				case 'view':
-					var ext_data_id = call_param.id;
-					var view_id = target_id;
-
 					//build the graphic
-					b_htmldom.build_a_view_content(view_id, ext_data_id);
+					b_htmldom.build_a_view_content(target_id, call_param.id);
+					break;
+
+				default :
+					b_htmldom.update_dom_by_ext_data(target_id, call_param.id);
 					break;
 			}
 		}
@@ -449,7 +450,7 @@ var browser = (function () {
 				call_oscar : call_oscar,
 				build_extra_sec: build_extra_sec,
 				do_sparql_query: do_sparql_query,
-				get_ext_data: get_ext_data,
+				//get_ext_data: get_ext_data,
 				get_ext_source_data_post: get_ext_source_data_post,
 				get_view_data: get_view_data,
 				//call back functions
@@ -481,7 +482,15 @@ var b_util = (function () {
 						if (fields != -1) {
 							var new_data = {}
 							for (var i = 0; i < fields.length; i++) {
-								new_data[fields[i]] = result['data'][fields[i]];
+								var parts = fields[i].split(".");
+								if (parts.length > 1) {
+									for (var j = 0; j < parts.length; j++) {
+										result['data'] = result['data'][parts[j]];
+									}
+									new_data[fields[i]] = result['data'];
+								}else {
+										new_data[fields[i]] = result['data'][fields[i]];
+								}
 							}
 							result['data'] = new_data;
 						}
@@ -878,6 +887,12 @@ var b_htmldom = (function () {
 						}
 					}
 
+					if (content_entry.id != undefined) {
+						if (content_entry.id[i] != undefined) {
+							elem_dom.id = content_entry.id[i];
+						}
+					}
+
 					str_innerHtml = str_innerHtml+ String(elem_dom.outerHTML);
 				}
 
@@ -1240,6 +1255,18 @@ var b_htmldom = (function () {
 		}
 	}
 
+	function update_dom_by_ext_data(content_id,call_param_id) {
+		var ext_dom_container = document.getElementById(content_id);
+		if (ext_dom_container != undefined) {
+			var a_dom_data = browser.get_ext_source_data_post()[call_param_id];
+			if (a_dom_data != -1) {
+				var val = a_dom_data.data;
+				ext_dom_container.innerHTML = val;
+				return val;
+			}
+		}
+		return -1;
+	}
 
 	return {
 		handle_menu: handle_menu,
@@ -1250,6 +1277,7 @@ var b_htmldom = (function () {
 		build_oscar: build_oscar,
 		update_oscar_li: update_oscar_li,
 		build_a_view_content: build_a_view_content,
-		loader: loader
+		loader: loader,
+		update_dom_by_ext_data: update_dom_by_ext_data
 	}
 })();
