@@ -80,8 +80,8 @@ var browser_conf = {
               "contents":{
                   "header": [
                       {"classes":["40px"]},
-                      {"fields": ["FREE-TEXT"], "values": ["Loading ..."], "id":["crossref_title_val"], "classes": ["header-title text-success"]},
-                      {"fields": ["FREE-TEXT", "FREE-TEXT"], "values": ["Author(s): ", "Loading ..."], "id":[null,"crossref_authors_val"], "classes": ["subtitle","subtitle text-success"]},
+                      {"fields": ["FREE-TEXT"], "values": ["Loading ..."], "id":["crossref_title_val"], "classes": ["header-title text-success"], "param":[{'data_param': {'format':'MULTI-VAL'}}]},
+                      {"fields": ["FREE-TEXT", "FREE-TEXT"], "values": ["Author(s): ", "Loading ..."], "id":[null,"crossref_authors_val"], "classes": ["subtitle","subtitle text-success"], "param":[null,{'data_param': {'format':'ONE-VAL'}}]},
                       {"classes":["8px"]},
                       {"fields": ["doi"], "values":[null], "classes":["subtitle browser-a"]},
                   ],
@@ -137,7 +137,7 @@ function crossref_handle_title(param) {
     str_title = title[0];
   }
 
-  var data = {'value': str_title};
+  var data = {'value':str_title,'source':param.call_param['label']};
   browser.target_ext_call(param.call_param,data);
 }
 
@@ -149,7 +149,7 @@ function coci_handle_title(param) {
     str_title = title;
   }
 
-  var data = {'value': str_title};
+  var data = {'value':str_title,'source':param.call_param['label']};
   browser.target_ext_call(param.call_param,data);
 }
 

@@ -277,14 +277,34 @@ var browser = (function () {
 						case 'X_AND_Y':
 							if (!(flag_first_data)) {
 								new_data = __update_x_and_y(target_content_id,new_data);
+							}else {
+								//INIT
+								ext_source_data_post[target_content_id]['data'] = new_data;
+								new_data = ext_source_data_post[target_content_id]['data'];
 							}
 							new_data = __operation_x_and_y(content_param,new_data);
 							ext_source_data_post[target_content_id]['data'] = __normalize_x_and_y(new_data);
 							break;
 
+						case 'MULTI-VAL':
+							if (!(flag_first_data)) {
+								new_data = __update_multi_val(target_content_id,new_data);
+							}else {
+								//INIT
+								ext_source_data_post[target_content_id]['data'] = {'value':null,'data':[new_data]};
+								new_data = ext_source_data_post[target_content_id]['data'];
+							}
+							new_data = __operation_multi_val(content_param,new_data);
+							ext_source_data_post[target_content_id]['data'] = __normalize_multi_val(new_data);
+							break;
+
 						case 'ONE-VAL':
 							if (!(flag_first_data)) {
 								new_data = __update_one_val(target_content_id,new_data);
+							}else {
+								//INIT
+								ext_source_data_post[target_content_id]['data'] = new_data;
+								new_data = ext_source_data_post[target_content_id]['data'];
 							}
 							new_data = __operation_one_val(content_param,new_data);
 							ext_source_data_post[target_content_id]['data'] = __normalize_one_val(new_data);
@@ -376,9 +396,8 @@ var browser = (function () {
 					var current_data = ext_source_data_post[target_content_id]['data'];
 
 					var new_data = {'value': current_data};
-					if ((data.value != current_data) || (data.value.toLowerCase() != current_data.toLowerCase()))  {
-						console.log(call_param);
-						new_data.value = new_data.value + " <br/> <div style='font-size: 65%;'> <span>"+ data.value +"</span><span style='font-size: 65%; color: black'>  *Source: " +call_param['label']+ " </span></div>";
+					if ((data.value != current_data) && (data.value.toLowerCase() != current_data.toLowerCase()))  {
+						new_data.value = data.value;
 					}
 
 					return new_data;
@@ -404,22 +423,100 @@ var browser = (function () {
 					}
 				}
 				function __normalize_one_val(data){
-					var normal_data = data.value;
+					var normal_data = data;
 					return normal_data;
+				}
+
+				//*MULTI-VAL DATA UPDATE*//
+				function __update_multi_val(target_content_id,data){
+					var current_data = ext_source_data_post[target_content_id]['data'];
+					//console.log(current_data);
+
+					var new_data = current_data;
+					var found_it_flag = false;
+					for (var i = 0; i < new_data.data.length; i++) {
+						var a_val = new_data.data[i].value;
+						if (a_val == data.value) {
+							found_it_flag = true;
+						}
+						if (a_val.toLowerCase() == data.value.toLowerCase()) {
+							found_it_flag = true;
+						}
+					}
+
+					if (!(found_it_flag)) {
+						new_data.data.push(data);
+					}
+
+					return new_data;
+				}
+				function __operation_multi_val(content_param,data){
+					//check if we have operations to apply on the data
+					if ('data_param' in content_param) {
+						if ('operation' in content_param.data_param) {
+								for (var op in content_param.data_param.operation) {
+									data = ___exec_operation(op,content_param.data_param.operation,data);
+								}
+						}
+					}
+					return data;
+
+					function ___exec_operation(op,content_data_operation,data) {
+						switch (op) {
+							case 'sort':
+								return data;
+							default:
+								return data;
+						}
+					}
+				}
+				function __normalize_multi_val(data){
+
+					var normal_data_value = "";
+					var new_line = "";
+					for (var i = 0; i < data.data.length; i++) {
+						if (i>0) {
+							//new_line = "<br/>";
+							new_line = "";
+						}
+						var coif = i+1;
+						if (coif > 4) {
+							coif = 4;
+						}
+						var size_perc = (1/coif*40)+60;
+						var source_lbl = "*Source: "+data.data[i].source;
+						if (data.data.length == 1) {
+							source_lbl = "";
+						}
+						normal_data_value = normal_data_value + new_line + "<div style='font-size: "+(size_perc).toString()+"%'>"+ data.data[i].value +"</span><span style='font-size: "+(50).toString()+"%; color: black'>  "+source_lbl+ " </span></div>";
+					}
+					return {'value': normal_data_value, 'data': data.data};
 				}
 			}
 		}
 
 		function search_content_item(type,id) {
 			if (contents[type] != undefined) {
+
+				var res = -1;
 				for (var i = 0; i < contents[type].length; i++) {
 					var item = contents[type][i];
-					if (item.id = id) {
-						return item;
+
+					if ('id' in item) {
+						if (item['id'].constructor === Array) {
+							if (item['id'].indexOf(id) != -1) {
+								return item.param[item['id'].indexOf(id)];
+							}
+						}else {
+							if (id == item['id']) {
+								return item;
+							}
+						}
 					}
 				}
 			}
-			return -1;
+
+			return res;
 		}
 
 		function _update_page(){
@@ -1325,7 +1422,7 @@ var b_htmldom = (function () {
 			if (ext_dom_container != undefined) {
 				var a_dom_data = browser.get_ext_source_data_post()[call_param_targets];
 				if (a_dom_data != -1) {
-					var val = a_dom_data.data;
+					var val = a_dom_data.data.value;
 					ext_dom_container.innerHTML = val;
 					return val;
 				}
