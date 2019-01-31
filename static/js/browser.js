@@ -9,7 +9,9 @@ var browser = (function () {
 		var oscar_content = null;
 		var current_oscar_tab = null;
 		var ext_data = {};
+		//targets -> data
 		var ext_source_data_post = {};
+		//call-id -> data
 		var ext_source_data = {};
 
 		var contents = null;
@@ -191,8 +193,8 @@ var browser = (function () {
 					}else {
 						//I have a result now check if I post processed it
 						//Check if post processing has been done
-						if (source_param.id in ext_source_data_post) {
-								browser.target_ext_call(source_param, ext_source_data_post[source_param.id].data);
+						if (source_param.targets in ext_source_data_post) {
+								browser.target_ext_call(source_param, ext_source_data_post[source_param.targets].data);
 						}else{
 								Reflect.apply(source_param.handle,undefined,[ext_source_data[source_param.id].data]);
 						}
@@ -233,7 +235,6 @@ var browser = (function () {
 		function target_ext_call(call_param, data){
 
 			var splits_dot = call_param.targets.split('.');
-			console.log(splits_dot);
 			var index = 0;
 			var target_type = null;
 			var target_id = null;
@@ -248,21 +249,164 @@ var browser = (function () {
 				target_id = match[1];
 			}
 
-
 			var content_param = search_content_item(target_type,target_id);
-			ext_source_data_post[call_param.id] = {};
-			ext_source_data_post[call_param.id]['data'] = data;
-			ext_source_data_post[call_param.id]['param'] = content_param;
+			_update_ext_source_data_post(call_param.targets,data,content_param);
+			b_htmldom.update_html_from_ext_source(target_type, target_id, call_param.targets);
 
-			switch (target_type) {
-				case 'view':
-					//build the graphic
-					b_htmldom.build_a_view_content(target_id, call_param.id);
-					break;
+			function _update_ext_source_data_post(target_content_id,data,content_param) {
 
-				default :
-					b_htmldom.update_dom_by_ext_data(target_id, call_param.id);
-					break;
+				var flag_first_data = false;
+				if (!(target_content_id in ext_source_data_post)) {
+					flag_first_data = true;
+					ext_source_data_post[target_content_id] = {};
+					ext_source_data_post[target_content_id]['param'] = content_param;
+				}
+
+				//var current_data = ext_source_data_post[target_content_id]['data'];
+				//join the current data with the new ones
+				//in case we have new
+				var format_data = 'ONE-VAL';
+				if ('data_param' in content_param) {
+					if ('format' in content_param['data_param']) {
+						format_data = content_param.data_param.format;
+					}
+				}
+
+				var new_data = data;
+				switch (format_data) {
+						case 'X_AND_Y':
+							if (!(flag_first_data)) {
+								new_data = __update_x_and_y(target_content_id,new_data);
+							}
+							new_data = __operation_x_and_y(content_param,new_data);
+							ext_source_data_post[target_content_id]['data'] = __normalize_x_and_y(new_data);
+							break;
+
+						case 'ONE-VAL':
+							if (!(flag_first_data)) {
+								new_data = __update_one_val(target_content_id,new_data);
+							}
+							new_data = __operation_one_val(content_param,new_data);
+							ext_source_data_post[target_content_id]['data'] = __normalize_one_val(new_data);
+							break;
+
+						default:
+							break;
+				}
+
+				//*X_AND_Y DATA UPDATE*//
+				function __update_x_and_y(target_content_id,data) {
+					var current_data = ext_source_data_post[target_content_id]['data'];
+					for (var i = 0; i < data.x.length; i++) {
+						var x_val = data.x[i];
+						var y_val = data.y[i];
+						var index_in_current_data = current_data.indexOf(x_val);
+
+						var flag_insert_it = false;
+						if (index_in_current_data == -1) {
+								flag_insert_it = true;
+						}else {
+							//check y
+							if (y_val != current_data.y[i]) {
+								flag_insert_it = true;
+							}
+						}
+
+						if (flag_insert_it) {
+							current_data.x.push(x_val);
+							current_data.y.push(y_val);
+						}
+					}
+
+					//format data in json
+					var all_data_json = {}
+					for (var i = 0; i < current_data.x.length; i++) {
+						if (!(current_data.x[i] in all_data_json)) {
+							all_data_json[current_data.x[i]] = [];
+						}
+						all_data_json[current_data.x[i]].push({
+							'y': current_data.y[i]
+						});
+					}
+
+					return all_data_json;
+				}
+				function __operation_x_and_y(content_param,data){
+					//check if we have operations to apply on the data
+					if ('data_param' in content_param) {
+						if ('operation' in content_param.data_param) {
+								for (var op in content_param.data_param.operation) {
+									data = ___exec_operation(op,content_param.data_param.operation,data);
+								}
+						}
+					}
+					return data;
+
+					function ___exec_operation(op,content_data_operation,data) {
+						switch (op) {
+							case 'sort':
+								if (content_data_operation['sort'] == true){
+									//sort the data
+								  sorted_all_data = {}
+								  Object.keys(data)
+								      .sort()
+								      .forEach(function(v, i) {
+								          sorted_all_data[v] = data[v];
+								       });
+									return sorted_all_data;
+								}
+								break;
+							default:
+								return data;
+						}
+					}
+				}
+				function __normalize_x_and_y(data) {
+					//the end of each handle function calls browser view again
+				  var normal_data = {'x':[],'y':[]}
+				  for (var key_date in data) {
+				    normal_data.x.push(key_date);
+				    normal_data.y.push(data[key_date].y);
+				  }
+					return normal_data;
+				}
+
+				//*ONE-VAL DATA UPDATE*//
+				function __update_one_val(target_content_id,data){
+					var current_data = ext_source_data_post[target_content_id]['data'];
+
+					var new_data = {'value': current_data};
+					if ((data.value != current_data) || (data.value.toLowerCase() != current_data.toLowerCase()))  {
+						console.log(call_param);
+						new_data.value = new_data.value + " <br/> <div style='font-size: 65%;'> <span>"+ data.value +"</span><span style='font-size: 65%; color: black'>  *Source: " +call_param['label']+ " </span></div>";
+					}
+
+					return new_data;
+				}
+				function __operation_one_val(content_param,data){
+					//check if we have operations to apply on the data
+					if ('data_param' in content_param) {
+						if ('operation' in content_param.data_param) {
+								for (var op in content_param.data_param.operation) {
+									data = ___exec_operation(op,content_param.data_param.operation,data);
+								}
+						}
+					}
+					return data;
+
+					function ___exec_operation(op,content_data_operation,data) {
+						switch (op) {
+							case 'sort':
+								return data;
+							default:
+								return data;
+						}
+					}
+				}
+				function __normalize_one_val(data){
+					var normal_data = data.value;
+					return normal_data;
+				}
 			}
 		}
 
@@ -1105,95 +1249,6 @@ var b_htmldom = (function () {
 		}
 	}
 
-	//new charts
-	function build_a_view_content(view_key, ext_data_id){
-
-		if (view_container == undefined) {
-			return -1;
-		}
-		var a_view_data = browser.get_ext_source_data_post()[ext_data_id];
-		console.log(a_view_data);
-
-
-		//build the html DOM
-		var a_view_div = _build_a_view_content(view_key, a_view_data);
-		var a_view_dom = _populate_a_view_dom(view_key, a_view_data, a_view_div);
-
-		function _build_a_view_content(view_key, a_view_data) {
-
-			var view_div = document.createElement("div");        // Create a <button> element
-			view_div.setAttribute("id", view_key);
-			if ('class' in a_view_data.param) {
-				view_div.setAttribute("class", a_view_data.param['class']);
-			}
-			view_container.appendChild(view_div);
-			return view_div;
-		}
-		function _populate_a_view_dom(view_key, a_view_data, a_view_div){
-			var a_view_data_param = a_view_data.param;
-			switch (a_view_data_param.type) {
-				case 'chart':
-					switch (a_view_data_param.style) {
-						case 'bars':
-						//create it
-						var canavas_dom = document.createElement("canvas");
-						canavas_dom.setAttribute("id", view_key+"_canavas");
-						if ('width' in a_view_data_param) {
-							canavas_dom.style.width =  a_view_data_param.width;
-						}
-						if ('height' in a_view_data_param) {
-							canavas_dom.style.height =  a_view_data_param.height;
-						}
-						a_view_div.appendChild(canavas_dom);
-						__create_chart_bars_dom(a_view_data, a_view_data_param, view_key);
-
-						break;
-					}
-					break;
-				default:
-					break;
-			}
-
-			function __create_chart_bars_dom(a_view_data, param, view_key) {
-
-				var canavas_dom = document.getElementById("myChart");
-				canavas_dom = document.getElementById(view_key+"_canavas");
-
-				var ctx = canavas_dom.getContext('2d');
-				var data = a_view_data.data;
-
-				var myChart = new Chart(ctx, {
-				    type: 'bar',
-				    data: {
-				        labels: data.x,
-				        datasets: [{
-				            label: param.label,
-				            data: data.y,
-				            //backgroundColor: [],
-				            //borderColor: [],
-				            borderWidth: 1
-				        }]
-				    },
-				    options: {
-								//responsive: true,
-								//maintainAspectRatio: false,
-				        scales: {
-				            yAxes: [{
-												barPercentage: 0.2,
-				                ticks: {
-				                    beginAtZero:true
-				                }
-				            }]
-				        }
-				    }
-				});
-
-				return canavas_dom;
-
-			}
-		}
-	}
-
 
 	/*creates the loader panel (while waiting for the results)*/
 	function loader(build_bool, progress_loader = null, query_label=null){
@@ -1254,18 +1309,118 @@ var b_htmldom = (function () {
 		}
 	}
 
-	function update_dom_by_ext_data(content_id,call_param_id) {
-		var ext_dom_container = document.getElementById(content_id);
-		if (ext_dom_container != undefined) {
-			var a_dom_data = browser.get_ext_source_data_post()[call_param_id];
-			if (a_dom_data != -1) {
-				var val = a_dom_data.data;
-				ext_dom_container.innerHTML = val;
-				return val;
+	function update_html_from_ext_source(target_type, target_id, target_content) {
+		switch (target_type) {
+			case 'view':
+				_update_view_by_ext_data(target_id, target_content);
+				break;
+
+			default :
+				_update_dom_by_ext_data(target_id, target_content);
+				break;
+		}
+
+		function _update_dom_by_ext_data(content_id,call_param_targets) {
+			var ext_dom_container = document.getElementById(content_id);
+			if (ext_dom_container != undefined) {
+				var a_dom_data = browser.get_ext_source_data_post()[call_param_targets];
+				if (a_dom_data != -1) {
+					var val = a_dom_data.data;
+					ext_dom_container.innerHTML = val;
+					return val;
+				}
+			}
+			return -1;
+		}
+		function _update_view_by_ext_data(view_key, ext_data_targets){
+
+			if (view_container == undefined) {
+				return -1;
+			}
+			var a_view_data = browser.get_ext_source_data_post()[ext_data_targets];
+			console.log(a_view_data);
+
+
+			//build the html DOM
+			var a_view_div = _build_a_view_content(view_key, a_view_data);
+			var a_view_dom = _populate_a_view_dom(view_key, a_view_data, a_view_div);
+
+			function _build_a_view_content(view_key, a_view_data) {
+
+				var view_div = document.createElement("div");        // Create a <button> element
+				view_div.setAttribute("id", view_key);
+				if ('class' in a_view_data.param) {
+					view_div.setAttribute("class", a_view_data.param['class']);
+				}
+				view_container.appendChild(view_div);
+				return view_div;
+			}
+			function _populate_a_view_dom(view_key, a_view_data, a_view_div){
+				var a_view_data_param = a_view_data.param;
+				switch (a_view_data_param.type) {
+					case 'chart':
+						switch (a_view_data_param.style) {
+							case 'bars':
+							//create it
+							var canavas_dom = document.createElement("canvas");
+							canavas_dom.setAttribute("id", view_key+"_canavas");
+							if ('width' in a_view_data_param) {
+								canavas_dom.style.width =  a_view_data_param.width;
+							}
+							if ('height' in a_view_data_param) {
+								canavas_dom.style.height =  a_view_data_param.height;
+							}
+							a_view_div.appendChild(canavas_dom);
+							__create_chart_bars_dom(a_view_data, a_view_data_param, view_key);
+
+							break;
+						}
+						break;
+					default:
+						break;
+				}
+
+				function __create_chart_bars_dom(a_view_data, param, view_key) {
+
+					var canavas_dom = document.getElementById("myChart");
+					canavas_dom = document.getElementById(view_key+"_canavas");
+
+					var ctx = canavas_dom.getContext('2d');
+					var data = a_view_data.data;
+
+					var myChart = new Chart(ctx, {
+					    type: 'bar',
+					    data: {
+					        labels: data.x,
+					        datasets: [{
+					            label: param.label,
+					            data: data.y,
+					            //backgroundColor: [],
+					            //borderColor: [],
+					            borderWidth: 1
+					        }]
+					    },
+					    options: {
+									//responsive: true,
+									//maintainAspectRatio: false,
+					        scales: {
+					            yAxes: [{
+													barPercentage: 0.2,
+					                ticks: {
+					                    beginAtZero:true
+					                }
+					            }]
+					        }
+					    }
+					});
+
+					return canavas_dom;
+
+				}
 			}
 		}
-		return -1;
 	}
+
 
 	return {
 		handle_menu: handle_menu,
@@ -1275,8 +1430,7 @@ var b_htmldom = (function () {
 		build_body: build_body,
 		build_oscar: build_oscar,
 		update_oscar_li: update_oscar_li,
-		build_a_view_content: build_a_view_content,
 		loader: loader,
-		update_dom_by_ext_data: update_dom_by_ext_data
+		update_html_from_ext_source: update_html_from_ext_source
 	}
 })();

@@ -27,13 +27,16 @@ var browser_conf = {
                 }
                 `
               ],
-              "links": {},
+              "links": {
+                "doi": {"field":"doi_iri","prefix":""}
+              },
               "group_by": {},
               "none_values": {},
               "ext_sources": [
                   {
                     'name': 'crossref',
-                    'id': 'crossref_title',
+                    'label': 'Crossref',
+                    'id': 'crossref_doi_title',
                     'call': 'https://api.crossref.org/works/[[?doi]]',
                     'format': 'json',
                     'handle': crossref_handle_title,
@@ -43,6 +46,7 @@ var browser_conf = {
                   },
                   {
                     'name': 'oc_ramose',
+                    'label': '',
                     'id': 'cits_in_time',
                     'call': 'http://opencitations.net/index/coci/api/v1/citations/[[?doi]]',
                     'format': 'json',
@@ -52,7 +56,17 @@ var browser_conf = {
                     //"respects": []
                   },
                   {
+                    'name': 'coci_ramose',
+                    'label': 'COCI',
+                    'id': 'coci_doi_title',
+                    'call': 'https://w3id.org/oc/index/coci/api/v1/metadata/[[?doi]]',
+                    'format': 'json',
+                    'handle': coci_handle_title,
+                    'targets': 'header.[[crossref_title_val]]'
+                  },
+                  {
                     'name': 'crossref',
+                    'label': '',
                     'id': 'crossref_authors',
                     'call': 'https://api.crossref.org/works/[[?doi]]',
                     'format': 'json',
@@ -67,9 +81,9 @@ var browser_conf = {
                   "header": [
                       {"classes":["40px"]},
                       {"fields": ["FREE-TEXT"], "values": ["Loading ..."], "id":["crossref_title_val"], "classes": ["header-title text-success"]},
-                      {"fields": ["FREE-TEXT", "FREE-TEXT"], "values": ["Authors: ", "Loading ..."], "id":[null,"crossref_authors_val"], "classes": ["subtitle","text-success"]},
+                      {"fields": ["FREE-TEXT", "FREE-TEXT"], "values": ["Author(s): ", "Loading ..."], "id":[null,"crossref_authors_val"], "classes": ["subtitle","subtitle text-success"]},
                       {"classes":["8px"]},
-                      {"fields": ["doi"], "values":[null], "classes":["subtitle"]},
+                      {"fields": ["doi"], "values":[null], "classes":["subtitle browser-a"]},
                   ],
                   "view": [
                               {
@@ -78,7 +92,7 @@ var browser_conf = {
                                   'class': 'coci-cits-in-time',
                                   'style': 'bars',
                                   'label': 'Number of Citations in COCI',
-                                  'data': {'x':'date', 'y':'count'},
+                                  'data_param': {'format':'X_AND_Y','operation':{'sort':true}},
                                   'background_color': 'random',
                                   'border_color': 'random',
                                   'borderWidth': 1,
@@ -112,7 +126,7 @@ function crossref_handle_author(param) {
       }
     }
   }
-  var data = str_authors;
+  var data = {'value': str_authors};
   browser.target_ext_call(param.call_param,data);
 }
 
@@ -123,7 +137,19 @@ function crossref_handle_title(param) {
     str_title = title[0];
   }
 
-  var data = str_title;
+  var data = {'value': str_title};
+  browser.target_ext_call(param.call_param,data);
+}
+
+function coci_handle_title(param) {
+  var title = param.data[0]['title'];
+
+  var str_title = null;
+  if (title != undefined) {
+    str_title = title;
+  }
+
+  var data = {'value': str_title};
   browser.target_ext_call(param.call_param,data);
 }
 
@@ -148,26 +174,15 @@ function oc_ramose_handle_dates(param) {
     }
   }
 
-  //sort the data
-  sorted_all_data = {}
-  Object.keys(all_data)
-      .sort()
-      .forEach(function(v, i) {
-          sorted_all_data[v] = all_data[v];
-       });
-
-  console.log(sorted_all_data);
-
-
-  //the end of each handle function calls browser view again
-  var data = {'x':[],'y':[]}
-  for (var key_date in sorted_all_data) {
-    data.x.push(key_date);
-    data.y.push(sorted_all_data[key_date]);
+  var data = {}
+  for (var key_date in all_data) {
+    data[key_date] = {'y': all_data[key_date], 'label': ""};
   }
 
+  // in this case the format needed
+  // {<x-val>:<corresponding_json_obj>}
+  // <corresponding_json_obj> = {y:<y-val>, ...}
   browser.target_ext_call(param.call_param,data);
-
 }
 
 function call_coci_oscar(param, fun_view_callbk) {
@@ -185,6 +200,11 @@ function call_coci_oscar(param, fun_view_callbk) {
    console.log(result_data);
    return result_data;
 }
+
+
+
+
+
 
 function decodeURIStr(str) {
   return decodeURIComponent(str);

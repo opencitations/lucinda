@@ -90,6 +90,14 @@ body.lucinda-cover{
   font-size: 230%;
 }
 
+.browser-a a,
+.browser-a a:hover,
+.browser-a a:focus {
+  color: #336699;
+  border-bottom-color: grey ;
+  background-color: transparent;
+}
+
 
 .browser-details-tab {
   table-layout: auto;
@@ -141,6 +149,9 @@ body.lucinda-cover{
   font-size: 200%;
 }
 
+.subtitle{
+  font-size: 130%;
+}
 .metrics-title{
   font-size: 145%;
 }
