@@ -45,6 +45,28 @@ var browser_conf = {
                     //"respects": []
                   },
                   {
+                    'name': 'crossref',
+                    'label': 'Crossref',
+                    'id': 'crossref_close_cits',
+                    'call': 'https://api.crossref.org/works/[[?doi]]',
+                    'format': 'json',
+                    'handle': crossref_handle_close_cits,
+                    'targets': 'details.[[close_cits_dom]]',
+                    'fields': ['message.is-referenced-by-count'],
+                    //"respects": []
+                  },
+                  {
+                    'name': 'wikidata',
+                    'label': 'Wikidata',
+                    'id': 'wikidata_metadata',
+                    'call': 'http://opencitations.net/wikidata/api/v1/metadata/[[?doi]]',
+                    'format': 'json',
+                    'handle': wikidata_handle_num_cits,
+                    'targets': 'details.[[cits_in_wikidata_dom]]',
+                    //'fields': ['message.is-referenced-by-count'],
+                    //"respects": []
+                  },
+                  {
                     'name': 'oc_ramose',
                     'label': '',
                     'id': 'cits_in_time',
@@ -52,6 +74,17 @@ var browser_conf = {
                     'format': 'json',
                     'handle': oc_ramose_handle_dates,
                     'targets': 'view.[[coci_cits_in_time]]'
+                    //'fields': [],
+                    //"respects": []
+                  },
+                  {
+                    'name': 'oc_ramose',
+                    'label': '',
+                    'id': 'cits_in_time',
+                    'call': 'http://opencitations.net/index/coci/api/v1/citations/[[?doi]]',
+                    'format': 'json',
+                    'handle': handle_num_cits_in_coci,
+                    'targets': 'details.[[cits_in_coci_dom]]'
                     //'fields': [],
                     //"respects": []
                   },
@@ -80,10 +113,46 @@ var browser_conf = {
               "contents":{
                   "header": [
                       {"classes":["40px"]},
-                      {"fields": ["FREE-TEXT"], "values": ["Loading ..."], "id":["crossref_title_val"], "classes": ["header-title text-success"], "param":[{'data_param': {'format':'MULTI-VAL'}}]},
-                      {"fields": ["FREE-TEXT", "FREE-TEXT"], "values": ["Author(s): ", "Loading ..."], "id":[null,"crossref_authors_val"], "classes": ["subtitle","subtitle text-success"], "param":[null,{'data_param': {'format':'ONE-VAL'}}]},
+                      {
+                        "fields": ["EXT-VAL"],
+                        "values": ["Loading ..."],
+                        "id":["crossref_title_val"],
+                        "classes": ["header-title text-success"],
+                        "param":[{'data_param': {'format':'MULTI-VAL','respects':[[not_empty]]}}]
+                      },
+                      {
+                        "fields": ["FREE-TEXT", "EXT-VAL"],
+                        "values": ["Author(s): ", "Loading ..."],
+                        "id":[null,"crossref_authors_val"],
+                        "classes": ["subtitle","subtitle text-success"],
+                        "param":[null,{'data_param': {'format':'ONE-VAL'}}]
+                      },
                       {"classes":["8px"]},
-                      {"fields": ["doi"], "values":[null], "classes":["subtitle browser-a"]},
+                      {"fields": ["doi"], "values":[null], "classes":["subtitle browser-a"]}
+                  ],
+                  "details": [
+                      {"classes":["15px"]},
+                      {
+                        "fields": ["FREE-TEXT", "EXT-VAL"],
+                        "values": ["Number of citations in Crossref (including the closed): ", "Loading ..."],
+                        "id":[null,"close_cits_dom"],
+                        "classes": [""," text-success"],
+                        "param":[null,{'data_param': {'format':'ONE-VAL'}}]
+                      },
+                      {
+                        "fields": ["FREE-TEXT", "EXT-VAL"],
+                        "values": ["Number of citations in Wikidata: ", "Loading ..."],
+                        "id":[null,"cits_in_wikidata_dom"],
+                        "classes": [""," text-success"],
+                        "param":[null,{'data_param': {'format':'ONE-VAL'}}]
+                      },
+                      {"classes":["20px"]},
+                      {
+                        "fields": ["FREE-TEXT", "EXT-VAL"],
+                        "values": ["Number of citations (COCI dataset): ", "Loading ..."],
+                        "id":[null,"cits_in_coci_dom"], "classes": [""," text-success"],
+                        "param":[null,{'data_param': {'format':'ONE-VAL'}}]
+                      },
                   ],
                   "view": [
                               {
@@ -91,7 +160,7 @@ var browser_conf = {
                                   'id': 'coci_cits_in_time',
                                   'class': 'coci-cits-in-time',
                                   'style': 'bars',
-                                  'label': 'Number of Citations in COCI',
+                                  'label': 'Number of Citations (COCI dataset)',
                                   'data_param': {'format':'X_AND_Y','operation':{'sort':true}},
                                   'background_color': 'random',
                                   'border_color': 'random',
@@ -141,6 +210,17 @@ function crossref_handle_title(param) {
   browser.target_ext_call(param.call_param,data);
 }
 
+function crossref_handle_close_cits(param) {
+  var val = param.data['message.is-referenced-by-count'];
+  var str_val = "";
+  if (val != undefined) {
+    str_val = val.toString();
+  }
+
+  var data = {'value':str_val};
+  browser.target_ext_call(param.call_param,data);
+}
+
 function coci_handle_title(param) {
   var title = param.data[0]['title'];
 
@@ -150,6 +230,18 @@ function coci_handle_title(param) {
   }
 
   var data = {'value':str_title,'source':param.call_param['label']};
+  browser.target_ext_call(param.call_param,data);
+}
+
+function wikidata_handle_num_cits(param) {
+  var val = param.data[0]['citation_count'];
+
+  var str_val = null;
+  if (val != undefined) {
+    str_val = val;
+  }
+
+  var data = {'value':str_val};
   browser.target_ext_call(param.call_param,data);
 }
 
@@ -182,6 +274,11 @@ function oc_ramose_handle_dates(param) {
   // in this case the format needed
   // {<x-val>:<corresponding_json_obj>}
   // <corresponding_json_obj> = {y:<y-val>, ...}
+  browser.target_ext_call(param.call_param,data);
+}
+
+function handle_num_cits_in_coci(param) {
+  var data = {'value':param.data.length};
   browser.target_ext_call(param.call_param,data);
 }
 
@@ -267,6 +364,14 @@ function is_in_cits(val){
 
 function not_unknown(val){
   return (val != 'unknown')
+}
+
+function not_in_loading(val){
+  return (val != 'Loading ...');
+}
+
+function test_this(val){
+  return (val[0] != 'S');
 }
 
 function not_empty(val){

@@ -295,6 +295,7 @@ var browser = (function () {
 								new_data = ext_source_data_post[target_content_id]['data'];
 							}
 							new_data = __operation_multi_val(content_param,new_data);
+							new_data = __check_multi_heuristics(content_param,new_data);
 							ext_source_data_post[target_content_id]['data'] = __normalize_multi_val(new_data);
 							break;
 
@@ -307,6 +308,9 @@ var browser = (function () {
 								new_data = ext_source_data_post[target_content_id]['data'];
 							}
 							new_data = __operation_one_val(content_param,new_data);
+							if(!(b_util.check_heuristics(content_param,0,new_data))){
+								ext_source_data_post[target_content_id]['data'] = 'NON-COMPLIANT' ;
+							}
 							ext_source_data_post[target_content_id]['data'] = __normalize_one_val(new_data);
 							break;
 
@@ -421,6 +425,21 @@ var browser = (function () {
 								return data;
 						}
 					}
+				}
+				function __check_multi_heuristics(content_param,data) {
+					var new_data = {'value':null,'data':[]};
+
+					for (var j = 0; j < data.data.length; j++) {
+						var new_obj = data.data[j];
+						if(!(b_util.check_heuristics(content_param.data_param,0,new_obj.value))){
+							//new_obj.value = 'NON-COMPLIANT';
+							continue;
+						}else {
+							new_data.data.push(new_obj);
+						}
+					}
+
+					return new_data;
 				}
 				function __normalize_one_val(data){
 					var normal_data = data;
@@ -734,13 +753,6 @@ var b_util = (function () {
 							}
 							result['data'] = new_data;
 						}
-						//check if respect restrictions
-						var respects = is_in_and_defined(call_param,'respects');
-						if (respects != -1) {
-							for (var i = 0; i < respects.length; i++) {
-									result['data'] = Reflect.apply(respects[i],undefined,[{'data':result['data']}]);
-							}
-						}
 
 						//update_ext_source_data
 						browser.update_ext_source_data(key, result);
@@ -1026,6 +1038,21 @@ var b_util = (function () {
 		}
 	}
 
+	function check_heuristics(content_entry,i,inner_text){
+		var add_it = true;
+		if (content_entry.respects != undefined) {
+			if (content_entry.respects[i] != undefined) {
+				//check if is a pending external call
+					var my_heur = content_entry.respects[i];
+					for (var j = 0; j < my_heur.length; j++) {
+						var h_func = my_heur[j];
+						add_it = Reflect.apply(h_func,undefined,[inner_text]);
+					}
+			}
+		}
+		return add_it;
+	}
+
 	return {
 		convert_to_format: convert_to_format,
 		is_in_and_defined: is_in_and_defined,
@@ -1037,7 +1064,8 @@ var b_util = (function () {
 		group_by: group_by,
 		is_undefined_key: is_undefined_key,
 		collect_values: collect_values,
-		build_str: build_str
+		build_str: build_str,
+		check_heuristics: check_heuristics
 	}
 })();
 
@@ -1090,29 +1118,15 @@ var b_htmldom = (function () {
 						if (key == "FREE-TEXT") {
 							 inner_text = content_entry.values[i];
 						}else {
-							if (key == "EXT_DATA") {
-								var data_field = content_entry.values[i];
-								var lucinda_ext_data = browser.get_ext_data();
-								if (! b_util.is_undefined_key(lucinda_ext_data, data_field)) {
-									inner_text = b_util.get_obj_key_val(lucinda_ext_data, data_field);
-								}
+							if (key == "EXT-VAL") {
+								inner_text = content_entry.values[i];
 							}
 						}
 					}
 
 
 					//check heuristics
-					var add_it = true;
-					if (content_entry.respects != undefined) {
-						if (content_entry.respects[i] != undefined) {
-							var my_heur = content_entry.respects[i];
-							for (var j = 0; j < my_heur.length; j++) {
-								var h_func = my_heur[j];
-								add_it = Reflect.apply(h_func,undefined,[inner_text]);
-							}
-						}
-					}
-
+					var add_it = b_util.check_heuristics(content_entry,i,inner_text);
 					if (!add_it) {
 						str_innerHtml = "";
 						break;
@@ -1422,9 +1436,9 @@ var b_htmldom = (function () {
 			if (ext_dom_container != undefined) {
 				var a_dom_data = browser.get_ext_source_data_post()[call_param_targets];
 				if (a_dom_data != -1) {
-					var val = a_dom_data.data.value;
-					ext_dom_container.innerHTML = val;
-					return val;
+						var val = a_dom_data.data.value;
+						ext_dom_container.innerHTML = val;
+						return val;
 				}
 			}
 			return -1;
@@ -1435,8 +1449,6 @@ var b_htmldom = (function () {
 				return -1;
 			}
 			var a_view_data = browser.get_ext_source_data_post()[ext_data_targets];
-			console.log(a_view_data);
-
 
 			//build the html DOM
 			var a_view_div = _build_a_view_content(view_key, a_view_data);
