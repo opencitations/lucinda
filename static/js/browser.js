@@ -13,6 +13,7 @@ var browser = (function () {
 		var ext_source_data_post = {};
 		//call-id -> data
 		var ext_source_data = {};
+		var pending_ext_calls = 0;
 
 		var contents = null;
 
@@ -168,15 +169,13 @@ var browser = (function () {
 
 		function _exec_ext_sources_calls(one_result, ext_sources) {
 			if (ext_sources != undefined) {
+				pending_ext_calls = ext_sources.length;
 				for (var i = 0; i < ext_sources.length; i++) {
 					var source_param = ext_sources[i];
 
 					if (!(source_param.id in ext_source_data)) {
 						ext_source_data[source_param.id] = {};
-						ext_source_data[source_param.id]['pending'] = 0;
 					}
-					ext_source_data[source_param.id]['pending'] += 1;
-
 
 					//check if I have already that result
 					var flag_call_service = true;
@@ -251,7 +250,11 @@ var browser = (function () {
 
 			var content_param = search_content_item(target_type,target_id);
 			_update_ext_source_data_post(call_param.targets,data,content_param);
-			b_htmldom.update_html_from_ext_source(target_type, target_id, call_param.targets);
+			pending_ext_calls -= 1;
+			b_htmldom.update_html_from_ext_source(target_type, target_id, call_param.targets, call_param.id);
+			if (pending_ext_calls == 0) {
+				console.log('DONE');
+			}
 
 			function _update_ext_source_data_post(target_content_id,data,content_param) {
 
@@ -275,6 +278,17 @@ var browser = (function () {
 				var new_data = data;
 				switch (format_data) {
 						case 'X_AND_Y':
+							if (flag_first_data) {
+								ext_source_data_post[target_content_id]['data'] = {'value':null,'data':{}};
+							}
+							new_data = __check_heuristics_x_and_y(new_data);
+							if(Object.keys(new_data).length > 0){
+								__update_x_and_y(new_data);
+								__operation_x_and_y();
+								__normalize_x_and_y();
+							}
+
+							/*
 							if (!(flag_first_data)) {
 								new_data = __update_x_and_y(target_content_id,new_data);
 							}else {
@@ -284,34 +298,30 @@ var browser = (function () {
 							}
 							new_data = __operation_x_and_y(content_param,new_data);
 							ext_source_data_post[target_content_id]['data'] = __normalize_x_and_y(new_data);
+							*/
 							break;
 
 						case 'MULTI-VAL':
-							if (!(flag_first_data)) {
-								new_data = __update_multi_val(target_content_id,new_data);
-							}else {
-								//INIT
-								ext_source_data_post[target_content_id]['data'] = {'value':null,'data':[new_data]};
-								new_data = ext_source_data_post[target_content_id]['data'];
+							if (flag_first_data) {
+								ext_source_data_post[target_content_id]['data'] = {'value':null,'data':[]};
 							}
-							new_data = __operation_multi_val(content_param,new_data);
-							new_data = __check_multi_heuristics(content_param,new_data);
-							ext_source_data_post[target_content_id]['data'] = __normalize_multi_val(new_data);
+							if (b_util.check_heuristics(content_param.data_param,0,new_data.value)) {
+								__update_multi_val(new_data);
+								__operation_multi_val();
+								__normalize_multi_val();
+							}
 							break;
 
 						case 'ONE-VAL':
-							if (!(flag_first_data)) {
-								new_data = __update_one_val(target_content_id,new_data);
-							}else {
-								//INIT
-								ext_source_data_post[target_content_id]['data'] = new_data;
-								new_data = ext_source_data_post[target_content_id]['data'];
+							if (flag_first_data) {
+								ext_source_data_post[target_content_id]['data'] = {};
 							}
-							new_data = __operation_one_val(content_param,new_data);
-							if(!(b_util.check_heuristics(content_param,0,new_data))){
-								ext_source_data_post[target_content_id]['data'] = 'NON-COMPLIANT' ;
+							if (b_util.check_heuristics(content_param.data_param,0,new_data.value)) {
+								__update_one_val(new_data);
+								__operation_one_val();
+								__normalize_one_val();
 							}
-							ext_source_data_post[target_content_id]['data'] = __normalize_one_val(new_data);
+							console.log(ext_source_data_post[target_content_id]['data']);
 							break;
 
 						default:
@@ -319,30 +329,34 @@ var browser = (function () {
 				}
 
 				//*X_AND_Y DATA UPDATE*//
-				function __update_x_and_y(target_content_id,data) {
-					var current_data = ext_source_data_post[target_content_id]['data'];
-					for (var i = 0; i < data.x.length; i++) {
-						var x_val = data.x[i];
-						var y_val = data.y[i];
-						var index_in_current_data = current_data.indexOf(x_val);
+				function __check_heuristics_x_and_y(data){
+					for (var x_key in data) {
+						if(!(b_util.check_heuristics(content_param.data_param,0,data[x_key].y))){
+							delete data[x_key];
+						}
+					}
+					return data;
+				}
+				function __update_x_and_y(data) {
+					var current_data = ext_source_data_post[target_content_id]['data'].data;
+					for (var x_key in data) {
+						var cor_val = data[x_key];
 
-						var flag_insert_it = false;
-						if (index_in_current_data == -1) {
-								flag_insert_it = true;
-						}else {
-							//check y
-							if (y_val != current_data.y[i]) {
-								flag_insert_it = true;
+						var flag_insert_it = true;
+						if (x_key in current_data) {
+							if (cor_val.y == current_data[x_key].y) {
+								flag_insert_it = false;
 							}
 						}
 
 						if (flag_insert_it) {
-							current_data.x.push(x_val);
-							current_data.y.push(y_val);
+							ext_source_data_post[target_content_id]['data'].data[x_key] = cor_val;
 						}
+
 					}
 
 					//format data in json
+					/*
 					var all_data_json = {}
 					for (var i = 0; i < current_data.x.length; i++) {
 						if (!(current_data.x[i] in all_data_json)) {
@@ -352,70 +366,80 @@ var browser = (function () {
 							'y': current_data.y[i]
 						});
 					}
-
 					return all_data_json;
+					*/
+
 				}
-				function __operation_x_and_y(content_param,data){
+				function __operation_x_and_y(){
 					//check if we have operations to apply on the data
 					if ('data_param' in content_param) {
 						if ('operation' in content_param.data_param) {
 								for (var op in content_param.data_param.operation) {
-									data = ___exec_operation(op,content_param.data_param.operation,data);
+									___exec_operation(op);
 								}
 						}
 					}
-					return data;
 
-					function ___exec_operation(op,content_data_operation,data) {
+					function ___exec_operation(op) {
 						switch (op) {
 							case 'sort':
-								if (content_data_operation['sort'] == true){
+								if (content_param.data_param.operation[op]['sort'] == true){
 									//sort the data
 								  sorted_all_data = {}
 								  Object.keys(data)
 								      .sort()
 								      .forEach(function(v, i) {
-								          sorted_all_data[v] = data[v];
+								          sorted_all_data[v] = ext_source_data_post[target_content_id]['data'].data[v];
 								       });
-									return sorted_all_data;
+									ext_source_data_post[target_content_id]['data'].data = sorted_all_data;
 								}
 								break;
 							default:
-								return data;
 						}
 					}
 				}
-				function __normalize_x_and_y(data) {
-					//the end of each handle function calls browser view again
-				  var normal_data = {'x':[],'y':[]}
-				  for (var key_date in data) {
+				function __normalize_x_and_y() {
+				  var normal_data = {'x':[],'y':[],'label':[]}
+				  for (var key_date in ext_source_data_post[target_content_id]['data'].data) {
 				    normal_data.x.push(key_date);
-				    normal_data.y.push(data[key_date].y);
+						var elem_key = ext_source_data_post[target_content_id]['data'].data[key_date];
+
+						if ('y' in elem_key) {
+							normal_data.y.push(elem_key.y);
+						}
+
+						if ('label' in elem_key) {
+							normal_data.label.push(elem_key.label);
+						}
 				  }
-					return normal_data;
+					ext_source_data_post[target_content_id]['data'].value = normal_data;
 				}
 
 				//*ONE-VAL DATA UPDATE*//
-				function __update_one_val(target_content_id,data){
-					var current_data = ext_source_data_post[target_content_id]['data'];
+				function __update_one_val(data){
+					var current_data_value = ext_source_data_post[target_content_id]['data'];
+					var update_it = true;
 
-					var new_data = {'value': current_data};
-					if ((data.value != current_data) && (data.value.toLowerCase() != current_data.toLowerCase()))  {
-						new_data.value = data.value;
+					//update rules
+					if (!(flag_first_data)) {
+						if ((current_data_value != data.value)&&(current_data_value.toLowerCase() != data.value.toLowerCase()))  {
+							update_it = false;
+						}
 					}
 
-					return new_data;
+					if (update_it) {
+						ext_source_data_post[target_content_id]['data'] = data;
+					}
 				}
-				function __operation_one_val(content_param,data){
+				function __operation_one_val(){
 					//check if we have operations to apply on the data
 					if ('data_param' in content_param) {
 						if ('operation' in content_param.data_param) {
 								for (var op in content_param.data_param.operation) {
-									data = ___exec_operation(op,content_param.data_param.operation,data);
+									ext_source_data_post[target_content_id]['data'] = ___exec_operation(op,content_param.data_param.operation,ext_source_data_post[target_content_id]['data']);
 								}
 						}
 					}
-					return data;
 
 					function ___exec_operation(op,content_data_operation,data) {
 						switch (op) {
@@ -426,59 +450,41 @@ var browser = (function () {
 						}
 					}
 				}
-				function __check_multi_heuristics(content_param,data) {
-					var new_data = {'value':null,'data':[]};
-
-					for (var j = 0; j < data.data.length; j++) {
-						var new_obj = data.data[j];
-						if(!(b_util.check_heuristics(content_param.data_param,0,new_obj.value))){
-							//new_obj.value = 'NON-COMPLIANT';
-							continue;
-						}else {
-							new_data.data.push(new_obj);
-						}
-					}
-
-					return new_data;
-				}
-				function __normalize_one_val(data){
-					var normal_data = data;
-					return normal_data;
+				function __normalize_one_val(){
+					//already ok
 				}
 
 				//*MULTI-VAL DATA UPDATE*//
-				function __update_multi_val(target_content_id,data){
-					var current_data = ext_source_data_post[target_content_id]['data'];
-					//console.log(current_data);
+				function __update_multi_val(data){
+					var update_it = true;
 
-					var new_data = current_data;
-					var found_it_flag = false;
-					for (var i = 0; i < new_data.data.length; i++) {
-						var a_val = new_data.data[i].value;
-						if (a_val == data.value) {
-							found_it_flag = true;
+					if (!(flag_first_data)) {
+						var current_ext_data = ext_source_data_post[target_content_id]['data'].data;
+
+						var found_it_flag = false;
+						for (var i = 0; i < current_ext_data.length; i++) {
+								var current_ext_data_value = current_ext_data[i].value;
+								if ((current_ext_data_value == data.value) || (current_ext_data_value.toLowerCase() == data.value.toLowerCase()))
+								{
+									found_it_flag = true;
+								}
 						}
-						if (a_val.toLowerCase() == data.value.toLowerCase()) {
-							found_it_flag = true;
-						}
+						update_it = !(found_it_flag)
 					}
 
-					if (!(found_it_flag)) {
-						new_data.data.push(data);
+					if (update_it) {
+						ext_source_data_post[target_content_id]['data'].data.push(data);
 					}
-
-					return new_data;
 				}
-				function __operation_multi_val(content_param,data){
+				function __operation_multi_val(){
 					//check if we have operations to apply on the data
 					if ('data_param' in content_param) {
 						if ('operation' in content_param.data_param) {
 								for (var op in content_param.data_param.operation) {
-									data = ___exec_operation(op,content_param.data_param.operation,data);
+									ext_source_data_post[target_content_id]['data'] = ___exec_operation(op,content_param.data_param.operation,ext_source_data_post[target_content_id]['data']);
 								}
 						}
 					}
-					return data;
 
 					function ___exec_operation(op,content_data_operation,data) {
 						switch (op) {
@@ -489,27 +495,41 @@ var browser = (function () {
 						}
 					}
 				}
-				function __normalize_multi_val(data){
+				function __normalize_multi_val(){
 
-					var normal_data_value = "";
-					var new_line = "";
-					for (var i = 0; i < data.data.length; i++) {
-						if (i>0) {
-							//new_line = "<br/>";
-							new_line = "";
+					var current_ext_data = ext_source_data_post[target_content_id]['data'].data;
+
+					var num_sources = 0;
+					for (var i = 0; i < current_ext_data.length; i++) {
+						if (current_ext_data[i].value != null) {
+							num_sources += 1;
 						}
+					}
+
+					var normal_data_value = null;
+
+					for (var i = 0; i < current_ext_data.length; i++) {
+						if (current_ext_data[i].value == null) {
+							continue;
+						}
+
+						if (normal_data_value == null) {
+							normal_data_value = "";
+						}
+
 						var coif = i+1;
 						if (coif > 4) {
 							coif = 4;
 						}
 						var size_perc = (1/coif*40)+60;
-						var source_lbl = "*Source: "+data.data[i].source;
-						if (data.data.length == 1) {
+						var source_lbl = "*Source: "+current_ext_data[i].source;
+						if (num_sources <= 1) {
 							source_lbl = "";
 						}
-						normal_data_value = normal_data_value + new_line + "<div style='font-size: "+(size_perc).toString()+"%'>"+ data.data[i].value +"</span><span style='font-size: "+(50).toString()+"%; color: black'>  "+source_lbl+ " </span></div>";
+						normal_data_value = normal_data_value + "<div style='font-size: "+(size_perc).toString()+"%'>"+ current_ext_data[i].value +"</span><span style='font-size: "+(50).toString()+"%; color: black'>  "+source_lbl+ " </span></div>";
 					}
-					return {'value': normal_data_value, 'data': data.data};
+
+					ext_source_data_post[target_content_id]['data'].value = normal_data_value;
 				}
 			}
 		}
@@ -572,6 +592,10 @@ var browser = (function () {
 
 		function get_ext_source_data_post() {
 			return ext_source_data_post;
+		}
+
+		function get_ext_source_data() {
+			return ext_source_data;
 		}
 
 		function get_view_data() {
@@ -711,6 +735,7 @@ var browser = (function () {
 				do_sparql_query: do_sparql_query,
 				//get_ext_data: get_ext_data,
 				get_ext_source_data_post: get_ext_source_data_post,
+				get_ext_source_data: get_ext_source_data,
 				get_view_data: get_view_data,
 				//call back functions
 				assign_oscar_results: assign_oscar_results,
@@ -760,8 +785,17 @@ var b_util = (function () {
 						Reflect.apply(callback,undefined,[result]);
 		    }
 		    else {
-		        console.log("Error: "+xhr.status);
-						return -1;
+		        //console.log("Error: "+xhr.status);
+						var result = {};
+						result['call_url'] = theUrl;
+						result['key'] = key;
+						result['call_param'] = call_param;
+					  result['data'] = null;
+
+						//update_ext_source_data
+						browser.update_ext_source_data(key, result);
+						//call the handle function
+						Reflect.apply(callback,undefined,[result]);
 		    }
 		};
 		xhr.send();
@@ -1162,6 +1196,40 @@ var b_htmldom = (function () {
 		return tr;
 	}
 
+	function _update_all_row(elem_id, data, data_format){
+
+			var remove_row = false;
+			switch (data_format) {
+				case 'ONE-VAL':
+					remove_row = __check_row_one_val(data);
+					break;
+
+				case 'MULTI-VAL':
+					remove_row = __check_row_multi_val(data);
+					break;
+
+				default:
+			}
+
+			console.log(data);
+			if (remove_row) {
+				var row_to_remove = document.getElementById(elem_id).parentNode;
+				row_to_remove.parentNode.removeChild(row_to_remove);
+			}
+
+			function __check_row_one_val(data) {
+				return (Object.keys(data).length == 0)
+			}
+
+			function __check_row_multi_val(data) {
+				return (Object.keys(data).length == 0)
+			}
+
+			function __check_row_x_and_y(data) {
+
+			}
+	}
+
 	function process_contents(obj_vals,content_entry) {
 	}
 
@@ -1420,7 +1488,9 @@ var b_htmldom = (function () {
 		}
 	}
 
-	function update_html_from_ext_source(target_type, target_id, target_content) {
+	function update_html_from_ext_source(target_type, target_id, target_content, call_param_id) {
+		var data_format = null;
+		var dom_data = null;
 		switch (target_type) {
 			case 'view':
 				_update_view_by_ext_data(target_id, target_content);
@@ -1428,6 +1498,8 @@ var b_htmldom = (function () {
 
 			default :
 				_update_dom_by_ext_data(target_id, target_content);
+				data_format = browser.get_ext_source_data_post()[target_content].param.data_param.format;
+				dom_data = browser.get_ext_source_data_post()[target_content].data;
 				break;
 		}
 
@@ -1496,14 +1568,15 @@ var b_htmldom = (function () {
 
 					var ctx = canavas_dom.getContext('2d');
 					var data = a_view_data.data;
+					console.log(a_view_data);
 
 					var myChart = new Chart(ctx, {
 					    type: 'bar',
 					    data: {
-					        labels: data.x,
+					        labels: data.value.x,
 					        datasets: [{
 					            label: param.label,
-					            data: data.y,
+					            data: data.value.y,
 					            //backgroundColor: [],
 					            //borderColor: [],
 					            borderWidth: 1

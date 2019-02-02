@@ -137,21 +137,21 @@ var browser_conf = {
                         "values": ["Number of citations in Crossref (including the closed): ", "Loading ..."],
                         "id":[null,"close_cits_dom"],
                         "classes": [""," text-success"],
-                        "param":[null,{'data_param': {'format':'ONE-VAL'}}]
+                        "param":[null,{'data_param': {'format':'ONE-VAL','respects':[[not_empty,not_unknown]]}}]
                       },
                       {
                         "fields": ["FREE-TEXT", "EXT-VAL"],
                         "values": ["Number of citations in Wikidata: ", "Loading ..."],
                         "id":[null,"cits_in_wikidata_dom"],
                         "classes": [""," text-success"],
-                        "param":[null,{'data_param': {'format':'ONE-VAL'}}]
+                        "param":[null,{'data_param': {'format':'ONE-VAL','respects':[[not_empty,not_unknown]]}}]
                       },
                       {"classes":["20px"]},
                       {
                         "fields": ["FREE-TEXT", "EXT-VAL"],
                         "values": ["Number of citations (COCI dataset): ", "Loading ..."],
                         "id":[null,"cits_in_coci_dom"], "classes": [""," text-success"],
-                        "param":[null,{'data_param': {'format':'ONE-VAL'}}]
+                        "param":[null,{'data_param': {'format':'ONE-VAL','respects':[[not_empty,not_unknown]]}}]
                       },
                   ],
                   "view": [
@@ -175,49 +175,60 @@ var browser_conf = {
 }
 
 function crossref_handle_author(param) {
-  var list_authors = param.data['message.author'];
+  var data = {'value': null,'source':param.call_param['label']};
 
-  var str_authors = "";
-  if (list_authors != undefined) {
-    for (var i = 0; i < list_authors.length; i++) {
-      var a_author = list_authors[i];
-      var flag_found = false;
-      if ('given' in a_author) {
-        str_authors = str_authors + a_author['given'] + " ";
-        flag_found = true;
-      }
-      if ('family' in a_author) {
-        str_authors = str_authors + a_author['family'];
-        flag_found = true;
-      }
-      if ((flag_found) && (i < list_authors.length-1)) {
-        str_authors = str_authors + ", ";
+  if (param.data != null) {
+    var list_authors = param.data['message.author'];
+
+    var str_authors = "";
+    if (list_authors != undefined) {
+      for (var i = 0; i < list_authors.length; i++) {
+        var a_author = list_authors[i];
+        var flag_found = false;
+        if ('given' in a_author) {
+          str_authors = str_authors + a_author['given'] + " ";
+          flag_found = true;
+        }
+        if ('family' in a_author) {
+          str_authors = str_authors + a_author['family'];
+          flag_found = true;
+        }
+        if ((flag_found) && (i < list_authors.length-1)) {
+          str_authors = str_authors + ", ";
+        }
       }
     }
+    data['value'] = str_authors;
   }
-  var data = {'value': str_authors};
+
   browser.target_ext_call(param.call_param,data);
 }
 
 function crossref_handle_title(param) {
-  var title = param.data['message.title'];
-  var str_title = "";
-  if (title != undefined) {
-    str_title = title[0];
+  var data = {'value': null,'source':param.call_param['label']};
+
+  if (param.data != null) {
+    var title = param.data['message.title'];
+    if (title != undefined) {
+      data['value'] = title[0];
+    }
   }
 
-  var data = {'value':str_title,'source':param.call_param['label']};
   browser.target_ext_call(param.call_param,data);
 }
 
 function crossref_handle_close_cits(param) {
-  var val = param.data['message.is-referenced-by-count'];
-  var str_val = "";
-  if (val != undefined) {
-    str_val = val.toString();
+  var data = {'value': null,'source':param.call_param['label']};
+
+  if (param.data != null) {
+    var val = param.data['message.is-referenced-by-count'];
+    var str_val = "";
+    if (val != undefined) {
+      str_val = val.toString();
+    }
+    data['value'] = str_val;
   }
 
-  var data = {'value':str_val};
   browser.target_ext_call(param.call_param,data);
 }
 
@@ -371,7 +382,7 @@ function not_in_loading(val){
 }
 
 function test_this(val){
-  return (val[0] != 'S');
+  return (val != '13');
 }
 
 function not_empty(val){
