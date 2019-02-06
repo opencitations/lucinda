@@ -204,12 +204,11 @@ body.lucinda-cover{
   }
   .browser-details{
     width: 100%;
-    font-size: 90%;
   }
   #browser_header{
     width: 100%;
     padding-bottom: 10px;
-    font-size: 90%;
+    font-size: 80%;
   }
   .browser-metrics{
     margin-top: 3%;
@@ -226,7 +225,14 @@ body.lucinda-cover{
     border-collapse: collapse;
   }
   .browser-metrics-tab tr td {
-    font-size: 95%;
+    font-size: 100%;
+  }
+
+  #search{
+    padding-top: 8%;
+  }
+  #oscar_nav {
+    margin-top:0%;
   }
 }
 
