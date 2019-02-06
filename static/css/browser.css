@@ -234,7 +234,7 @@ body.lucinda-cover{
   #oscar_nav {
     margin-top:0%;
     text-align:center;
-    margin-bottom:5%;
+    margin-bottom:0%;
   }
   #oscar_nav li a{
     font-size:130%;
@@ -243,5 +243,7 @@ body.lucinda-cover{
 
 
 @media only screen and (max-width: 700px) {
-
+  #oscar_nav {
+    margin-bottom:5%;
+  }
 }
