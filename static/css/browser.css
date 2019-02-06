@@ -232,6 +232,7 @@ body.lucinda-cover{
     padding-top: 8%;
   }
   #oscar_nav {
+    width: 100%;
     margin-top:0%;
     text-align:center;
     margin-bottom:0%;
@@ -244,6 +245,7 @@ body.lucinda-cover{
 
 @media only screen and (max-width: 700px) {
   #oscar_nav {
+    width: 100%;
     margin-bottom:5%;
   }
 }
