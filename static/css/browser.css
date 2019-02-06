@@ -233,6 +233,11 @@ body.lucinda-cover{
   }
   #oscar_nav {
     margin-top:0%;
+    text-align:center;
+    margin-bottom:5%;
+  }
+  #oscar_nav li a{
+    font-size:130%;
   }
 }
 

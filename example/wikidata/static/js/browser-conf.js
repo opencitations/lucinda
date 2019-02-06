@@ -186,7 +186,7 @@ var browser_conf = {
                 //{"fields": ["FREE-TEXT","dateLabel"], "values": ["Date of birth: ",null]},
                 {"fields": ["FREE-TEXT","educationLabel"], "values": ["Educated at: ",null], "respects":[[],[not_unknown]]},
                 {"fields": ["FREE-TEXT","occupationLabel"], "values": ["Occupation: ",null], "respects":[[],[not_unknown]]},
-                {"fields": ["FREE-TEXT","employerLabel"], "values": ["Emplyer at: ",null], "respects":[[],[not_unknown]]},
+                {"fields": ["FREE-TEXT","employerLabel"], "values": ["Employer at: ",null], "respects":[[],[not_unknown]]},
             ],
             "metrics": [
                 {"classes":["30px"]},
