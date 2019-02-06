@@ -1531,7 +1531,7 @@ var b_htmldom = (function () {
 				var view_div = document.createElement("div");        // Create a <button> element
 				view_div.setAttribute("id", view_key);
 				if ('class' in a_view_data.param) {
-					view_div.setAttribute("class", a_view_data.param['class']);
+					view_div.setAttribute("class", "view_elem "+a_view_data.param['class']);
 				}
 				view_container.appendChild(view_div);
 				return view_div;
@@ -1563,8 +1563,7 @@ var b_htmldom = (function () {
 
 				function __create_chart_bars_dom(a_view_data, param, view_key) {
 
-					var canavas_dom = document.getElementById("myChart");
-					canavas_dom = document.getElementById(view_key+"_canavas");
+					var canavas_dom = document.getElementById(view_key+"_canavas");
 
 					var ctx = canavas_dom.getContext('2d');
 					var data = a_view_data.data;

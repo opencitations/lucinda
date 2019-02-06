@@ -195,8 +195,7 @@ body.lucinda-cover{
     -ms-user-select: none; /* IE10+ */
 }
 
-
-@media only screen and (max-width: 700px) {
+@media only screen and (max-width: 1200px) {
   #browser {
     width: 100%;
   }
@@ -205,10 +204,12 @@ body.lucinda-cover{
   }
   .browser-details{
     width: 100%;
+    font-size: 90%;
   }
   #browser_header{
     width: 100%;
     padding-bottom: 10px;
+    font-size: 90%;
   }
   .browser-metrics{
     margin-top: 3%;
@@ -225,6 +226,11 @@ body.lucinda-cover{
     border-collapse: collapse;
   }
   .browser-metrics-tab tr td {
-    font-size: 110%;
+    font-size: 95%;
   }
+}
+
+
+@media only screen and (max-width: 700px) {
+
 }
