@@ -77,7 +77,7 @@ var browser_conf = {
                     'format': 'json',
                     'handle': oc_ramose_handle_dates,
                     'targets': 'view.[[coci_cits_in_time]]',
-                    'valid_data':[is_x_and_y_defined],
+                    'valid_data':[not_empty,not_undefined],
                     //'fields': [],
                     //"respects": []
                   },
@@ -184,7 +184,7 @@ var browser_conf = {
                                   'background_color': 'random',
                                   'border_color': 'random',
                                   'borderWidth': 1,
-                                  'respects':[],
+                                  'respects':[is_x_and_y_defined],
                                   //'width': "40px",
                                   //'height': "30px"
                               }
@@ -278,7 +278,6 @@ function wikidata_handle_num_cits(param) {
 }
 
 function oc_ramose_handle_dates(param) {
-  console.log(param);
 
   //Create the type of data according to the view you want to build
   var all_data = {};
