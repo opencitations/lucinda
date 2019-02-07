@@ -42,6 +42,7 @@ var browser_conf = {
                     'handle': crossref_handle_title,
                     'targets': 'header.[[crossref_title_val]]',
                     'fields': ['message.title'],
+                    'valid_data':[not_empty,not_undefined]
                     //"respects": []
                   },
                   {
@@ -53,6 +54,7 @@ var browser_conf = {
                     'handle': crossref_handle_close_cits,
                     'targets': 'details.[[close_cits_dom]]',
                     'fields': ['message.is-referenced-by-count'],
+                    'valid_data':[not_empty,not_undefined]
                     //"respects": []
                   },
                   {
@@ -63,6 +65,7 @@ var browser_conf = {
                     'format': 'json',
                     'handle': wikidata_handle_num_cits,
                     'targets': 'details.[[cits_in_wikidata_dom]]',
+                    'valid_data':[not_empty,not_undefined]
                     //'fields': ['message.is-referenced-by-count'],
                     //"respects": []
                   },
@@ -73,7 +76,8 @@ var browser_conf = {
                     'call': 'http://opencitations.net/index/coci/api/v1/citations/[[?doi]]',
                     'format': 'json',
                     'handle': oc_ramose_handle_dates,
-                    'targets': 'view.[[coci_cits_in_time]]'
+                    'targets': 'view.[[coci_cits_in_time]]',
+                    'valid_data':[is_x_and_y_defined],
                     //'fields': [],
                     //"respects": []
                   },
@@ -84,7 +88,8 @@ var browser_conf = {
                     'call': 'http://opencitations.net/index/coci/api/v1/citations/[[?doi]]',
                     'format': 'json',
                     'handle': handle_num_cits_in_coci,
-                    'targets': 'details.[[cits_in_coci_dom]]'
+                    'targets': 'details.[[cits_in_coci_dom]]',
+                    'valid_data':[not_empty,not_undefined]
                     //'fields': [],
                     //"respects": []
                   },
@@ -95,7 +100,8 @@ var browser_conf = {
                     'call': 'https://w3id.org/oc/index/coci/api/v1/metadata/[[?doi]]',
                     'format': 'json',
                     'handle': coci_handle_title,
-                    'targets': 'header.[[crossref_title_val]]'
+                    'targets': 'header.[[crossref_title_val]]',
+                    'valid_data':[not_empty,not_undefined]
                   },
                   {
                     'name': 'crossref',
@@ -106,6 +112,7 @@ var browser_conf = {
                     'handle': crossref_handle_author,
                     'targets': 'header.[[crossref_authors_val]]',
                     'fields': ['message.author'],
+                    'valid_data':[not_empty,not_undefined]
                     //"respects": []
                   }
               ],
@@ -118,17 +125,25 @@ var browser_conf = {
                         "values": ["Loading ..."],
                         "id":["crossref_title_val"],
                         "classes": ["header-title text-success"],
-                        "param":[{'data_param': {'format':'MULTI-VAL','respects':[[not_empty]]}}]
+                        "param":[{'data_param': {'format':'MULTI-VAL'}}],
+                        'respects':[[not_undefined]]
                       },
                       {
                         "fields": ["FREE-TEXT", "EXT-VAL"],
                         "values": ["Author(s): ", "Loading ..."],
                         "id":[null,"crossref_authors_val"],
                         "classes": ["subtitle","subtitle text-success"],
-                        "param":[null,{'data_param': {'format':'ONE-VAL'}}]
+                        "param":[null,{'data_param': {'format':'ONE-VAL'}}],
+                        'respects':[[],[not_undefined]]
                       },
                       {"classes":["8px"]},
-                      {"fields": ["doi"], "values":[null], "classes":["subtitle browser-a"]}
+                      {
+                        "fields": ["doi"],
+                        "values":[null],
+                        "classes":["subtitle browser-a"],
+                        'respects':[[]]
+                      },
+
                   ],
                   "details": [
                       {"classes":["15px"]},
@@ -137,21 +152,24 @@ var browser_conf = {
                         "values": ["Number of citations in Crossref (including the closed): ", "Loading ..."],
                         "id":[null,"close_cits_dom"],
                         "classes": [""," text-success"],
-                        "param":[null,{'data_param': {'format':'ONE-VAL','respects':[[not_empty,not_unknown]]}}]
+                        "param":[null,{'data_param': {'format':'ONE-VAL'}}],
+                        'respects':[[],[not_undefined]]
                       },
                       {
                         "fields": ["FREE-TEXT", "EXT-VAL"],
                         "values": ["Number of citations in Wikidata: ", "Loading ..."],
                         "id":[null,"cits_in_wikidata_dom"],
                         "classes": [""," text-success"],
-                        "param":[null,{'data_param': {'format':'ONE-VAL','respects':[[not_empty,not_unknown]]}}]
+                        "param":[null,{'data_param': {'format':'ONE-VAL'}}],
+                        'respects':[[],[not_undefined]]
                       },
                       {"classes":["20px"]},
                       {
                         "fields": ["FREE-TEXT", "EXT-VAL"],
                         "values": ["Number of citations (COCI dataset): ", "Loading ..."],
                         "id":[null,"cits_in_coci_dom"], "classes": [""," text-success"],
-                        "param":[null,{'data_param': {'format':'ONE-VAL','respects':[[not_empty,not_unknown]]}}]
+                        "param":[null,{'data_param': {'format':'ONE-VAL'}}],
+                        'respects':[[],[not_undefined]]
                       },
                   ],
                   "view": [
@@ -165,6 +183,7 @@ var browser_conf = {
                                   'background_color': 'random',
                                   'border_color': 'random',
                                   'borderWidth': 1,
+                                  'respects':[],
                                   //'width': "40px",
                                   //'height': "30px"
                               }
@@ -233,11 +252,12 @@ function crossref_handle_close_cits(param) {
 }
 
 function coci_handle_title(param) {
-  var title = param.data[0]['title'];
-
   var str_title = null;
-  if (title != undefined) {
-    str_title = title;
+  if (param.data[0] != undefined ) {
+    var title = param.data[0]['title'];
+    if (title != undefined) {
+      str_title = title;
+    }
   }
 
   var data = {'value':str_title,'source':param.call_param['label']};
@@ -245,13 +265,13 @@ function coci_handle_title(param) {
 }
 
 function wikidata_handle_num_cits(param) {
-  var val = param.data[0]['citation_count'];
-
   var str_val = null;
-  if (val != undefined) {
-    str_val = val;
+  if (param.data[0] != undefined ) {
+    var val = param.data[0]['citation_count'];
+    if (val != undefined) {
+      str_val = val;
+    }
   }
-
   var data = {'value':str_val};
   browser.target_ext_call(param.call_param,data);
 }
@@ -377,13 +397,31 @@ function not_unknown(val){
   return (val != 'unknown')
 }
 
+function not_undefined(val){
+  return (val != undefined)
+}
+
 function not_in_loading(val){
   return (val != 'Loading ...');
 }
 
 function test_this(val){
-  return (val != '13');
+  return (val != '0');
 }
+
+function is_x_and_y_defined(val) {
+  if ((val == undefined) || (Object.keys(val).length == 0)){
+    return false;
+  }
+  if ((val.x == undefined) || (val.x == null) || (val.x.length == 0)){
+    return false;
+  }
+  if ((val.y == undefined) || (val.y == null) || (val.y.length == 0)){
+    return false;
+  }
+  return true;
+}
+
 
 function not_empty(val){
   return (val != '')
