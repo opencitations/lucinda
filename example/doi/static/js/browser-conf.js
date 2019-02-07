@@ -126,7 +126,8 @@ var browser_conf = {
                         "id":["crossref_title_val"],
                         "classes": ["header-title text-success"],
                         "param":[{'data_param': {'format':'MULTI-VAL'}}],
-                        'respects':[[not_undefined]]
+                        'transform': [[title_transform]],
+                        'respects':[[not_undefined,not_unknown]]
                       },
                       {
                         "fields": ["FREE-TEXT", "EXT-VAL"],
@@ -134,7 +135,7 @@ var browser_conf = {
                         "id":[null,"crossref_authors_val"],
                         "classes": ["subtitle","subtitle text-success"],
                         "param":[null,{'data_param': {'format':'ONE-VAL'}}],
-                        'respects':[[],[not_undefined]]
+                        'respects':[[],[not_undefined,not_unknown]]
                       },
                       {"classes":["8px"]},
                       {
@@ -153,7 +154,7 @@ var browser_conf = {
                         "id":[null,"close_cits_dom"],
                         "classes": [""," text-success"],
                         "param":[null,{'data_param': {'format':'ONE-VAL'}}],
-                        'respects':[[],[not_undefined]]
+                        'respects':[[],[not_undefined,not_unknown]]
                       },
                       {
                         "fields": ["FREE-TEXT", "EXT-VAL"],
@@ -161,7 +162,7 @@ var browser_conf = {
                         "id":[null,"cits_in_wikidata_dom"],
                         "classes": [""," text-success"],
                         "param":[null,{'data_param': {'format':'ONE-VAL'}}],
-                        'respects':[[],[not_undefined]]
+                        'respects':[[],[not_undefined,not_unknown]]
                       },
                       {"classes":["20px"]},
                       {
@@ -169,7 +170,7 @@ var browser_conf = {
                         "values": ["Number of citations (COCI dataset): ", "Loading ..."],
                         "id":[null,"cits_in_coci_dom"], "classes": [""," text-success"],
                         "param":[null,{'data_param': {'format':'ONE-VAL'}}],
-                        'respects':[[],[not_undefined]]
+                        'respects':[[],[not_undefined,not_unknown]]
                       },
                   ],
                   "view": [
@@ -431,4 +432,11 @@ function make_it_empty(val){
   if (val == 'True') {
     return '';
   }
+}
+
+function title_transform(val) {
+  if ((val == undefined) || (val == null) || (val == 'unknown')) {
+    return "Element not found"
+  }
+  return val;
 }

@@ -558,7 +558,7 @@ var browser = (function () {
 		}
 
 		function _update_page(){
-			b_htmldom.build_body(resource_res, contents);
+			b_htmldom.build_body(resource_res, contents, is_updating = true);
 		}
 
 		function _build_oscar_table(one_result,contents) {
@@ -1098,6 +1098,26 @@ var b_util = (function () {
 		return add_it;
 	}
 
+	function transform_value(content_entry,i,val){
+		var final_val = val;
+		if (content_entry != undefined) {
+			if (content_entry.transform != undefined) {
+
+				var i_transform_list = content_entry.transform;
+				if (i != -1) {
+					i_transform_list = content_entry.transform[i];
+				}
+				if (i_transform_list != undefined) {
+						for (var j = 0; j < i_transform_list.length; j++) {
+							var h_func = i_transform_list[j];
+							final_val = Reflect.apply(h_func,undefined,[final_val]);
+						}
+				}
+			}
+		}
+		return final_val;
+	}
+
 	function check_data_validity(content_entry,val){
 		var is_valid = true;
 		if (content_entry.valid_data != undefined) {
@@ -1123,7 +1143,8 @@ var b_util = (function () {
 		collect_values: collect_values,
 		build_str: build_str,
 		check_heuristics: check_heuristics,
-		check_data_validity: check_data_validity
+		check_data_validity: check_data_validity,
+		transform_value: transform_value
 	}
 })();
 
@@ -1140,7 +1161,7 @@ var b_htmldom = (function () {
 	var metrics_container = document.getElementById("browser_metrics");
 	var view_container = document.getElementById("browser_view");
 
-	function _init_tr(obj_vals, content_entry, section){
+	function _init_tr(obj_vals, content_entry, section, is_updating = false){
 		var tr = document.createElement("tr");
 
 		//create cell
@@ -1177,15 +1198,22 @@ var b_htmldom = (function () {
 							 inner_text = content_entry.values[i];
 						}else {
 							if (key == "EXT-VAL") {
-								inner_text = content_entry.values[i];
 
-								if (browser.get_pending_calls() == 0) {
-									var ext_call_id_post = section+"."+"[["+content_entry.id[i]+"]]";
-									if (browser.get_ext_source_data_post()[ext_call_id_post] != undefined) {
-											//inner_text = "Now is all done";
-											inner_text = browser.get_ext_source_data_post()[ext_call_id_post].value;
+
+								if (is_updating) {
+									if (browser.get_pending_calls() == 0) {
+										var ext_call_id_post = section+"."+"[["+content_entry.id[i]+"]]";
+										if (browser.get_ext_source_data_post()[ext_call_id_post].data.value != undefined) {
+												//inner_text = "Now is all done";
+												inner_text = browser.get_ext_source_data_post()[ext_call_id_post].data.value;
+										}
+										//transform data
+										inner_text = b_util.transform_value(content_entry,i,inner_text);
+									}else {
+											inner_text = content_entry.values[i];
 									}
 								}
+
 							}
 						}
 					}
@@ -1265,7 +1293,7 @@ var b_htmldom = (function () {
 	function process_contents(obj_vals,content_entry) {
 	}
 
-	function _build_section(data_obj, contents, class_name, section){
+	function _build_section(data_obj, contents, class_name, section, is_updating= false){
 
 		switch (section) {
 			case "extra":
@@ -1285,7 +1313,8 @@ var b_htmldom = (function () {
 										//b_util.collect_values(data_obj, mycontents[i].fields),
 										b_util.collect_values(data_obj, 1),
 										mycontents[i],
-										section
+										section,
+										is_updating = is_updating
 									).outerHTML;
 					}
 				}
@@ -1330,18 +1359,18 @@ var b_htmldom = (function () {
 			}
 	}
 
-	function build_body(data_obj, contents){
+	function build_body(data_obj, contents, is_updating = false){
 
 		if (header_container == null) {
 			return -1;
 		}else {
 			//the header is a must
-			header_container.innerHTML = _build_section(data_obj, contents, "browser-header-tab", "header").outerHTML;
+			header_container.innerHTML = _build_section(data_obj, contents, "browser-header-tab", "header",is_updating = is_updating).outerHTML;
 			if (extra_container != null) {
-				_build_section(data_obj, contents, null, "extra");
+				_build_section(data_obj, contents, null, "extra", is_updating = is_updating);
 			}
 			if (details_container != null) {
-				var sec_tab_con = _build_section(data_obj, contents, "browser-details-tab", "details");
+				var sec_tab_con = _build_section(data_obj, contents, "browser-details-tab", "details",is_updating = is_updating);
 				if (sec_tab_con != -1) {
 					details_container.innerHTML = sec_tab_con.outerHTML;
 				}else {
@@ -1349,7 +1378,7 @@ var b_htmldom = (function () {
 				}
 			}
 			if (metrics_container != null) {
-				var sec_tab_con = _build_section(data_obj, contents, "browser-metrics-tab", "metrics");
+				var sec_tab_con = _build_section(data_obj, contents, "browser-metrics-tab", "metrics", is_updating = is_updating);
 				if (sec_tab_con != -1) {
 					metrics_container.innerHTML = sec_tab_con.outerHTML;
 				}else {
@@ -1373,7 +1402,7 @@ var b_htmldom = (function () {
 	function build_extra(adhoc_data_obj, contents){
 		if (extra_container != null) {
 			if (adhoc_data_obj != null) {
-				_build_section(adhoc_data_obj, contents, null, "extra");
+				_build_section(adhoc_data_obj, contents, null, "extra", is_updating = is_updating);
 			}
 		}
 	}
