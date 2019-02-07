@@ -1623,7 +1623,7 @@ var b_htmldom = (function () {
 
 					var ctx = canavas_dom.getContext('2d');
 					var data = a_view_data.data;
-					console.log(a_view_data);
+					//console.log(a_view_data);
 
 					var myChart = new Chart(ctx, {
 					    type: 'bar',
