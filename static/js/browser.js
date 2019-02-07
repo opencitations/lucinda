@@ -269,13 +269,7 @@ var browser = (function () {
 			*/
 			pending_ext_calls -= 1;
 			if (pending_ext_calls == 0) {
-				//NOW CHECK ALL THE RESPECTS ROOLS
-				console.log('DONE Check respects');
-				//for (var key_post_data in ext_source_data_post) {
-				//	var k_data = ext_source_data_post[key_post_data].data;
-				//	console.log(k_data,content_param.data_param);
-				//	console.log(b_util.check_heuristics(content_param.respects,-1,k_data.value));
-				//}
+				//NOW Update the page and remove the elements that do not follow the heuristics
 				_update_page();
 			}
 
@@ -1207,8 +1201,6 @@ var b_htmldom = (function () {
 												//inner_text = "Now is all done";
 												inner_text = browser.get_ext_source_data_post()[ext_call_id_post].data.value;
 										}
-										//transform data
-										inner_text = b_util.transform_value(content_entry,i,inner_text);
 									}else {
 											inner_text = content_entry.values[i];
 									}
@@ -1218,6 +1210,8 @@ var b_htmldom = (function () {
 						}
 					}
 
+					//transform data
+					inner_text = b_util.transform_value(content_entry,i,inner_text);
 
 					//check heuristics
 					var add_it = b_util.check_heuristics(content_entry,i,inner_text);
