@@ -2,16 +2,6 @@ var browser_conf = {
   "sparql_endpoint": "https://w3id.org/oc/index/coci/sparql",
 
   "prefixes": [
-    {"prefix":"wd","iri":"http://www.wikidata.org/entity/"},
-    {"prefix":"wds","iri":"http://www.wikidata.org/entity/statement/"},
-    {"prefix":"wdv","iri":"http://www.wikidata.org/value/"},
-    {"prefix":"wdt","iri":"http://www.wikidata.org/prop/direct/"},
-    {"prefix":"wikibase","iri":"http://wikiba.se/ontology#"},
-    {"prefix":"p","iri":"http://www.wikidata.org/prop/"},
-    {"prefix":"ps","iri":"http://www.wikidata.org/prop/statement/"},
-    {"prefix":"pq","iri":"http://www.wikidata.org/prop/qualifier/"},
-    {"prefix":"rdfs","iri":"http://www.w3.org/2000/01/rdf-schema#"},
-    {"prefix":"bd","iri":"http://www.bigdata.com/rdf#"}
     ],
 
     "categories":{
@@ -40,7 +30,7 @@ var browser_conf = {
                     'call': 'https://api.crossref.org/works/[[?doi]]',
                     'format': 'json',
                     'handle': crossref_handle_title,
-                    'targets': 'header.[[crossref_title_val]]',
+                    'targets': 'header.[[title_val]]',
                     'fields': ['message.title'],
                     'valid_data':[not_empty,not_undefined]
                     //"respects": []
@@ -70,20 +60,20 @@ var browser_conf = {
                     //"respects": []
                   },
                   {
-                    'name': 'oc_ramose',
-                    'label': '',
+                    'name': 'coci_citations',
+                    'label': 'COCI',
                     'id': 'cits_in_time',
                     'call': 'http://opencitations.net/index/coci/api/v1/citations/[[?doi]]',
                     'format': 'json',
-                    'handle': oc_ramose_handle_dates,
+                    'handle': coci_handle_dates,
                     'targets': 'view.[[coci_cits_in_time]]',
                     'valid_data':[not_empty,not_undefined],
                     //'fields': [],
                     //"respects": []
                   },
                   {
-                    'name': 'oc_ramose',
-                    'label': '',
+                    'name': 'coci_citations',
+                    'label': 'COCI',
                     'id': 'cits_in_time',
                     'call': 'http://opencitations.net/index/coci/api/v1/citations/[[?doi]]',
                     'format': 'json',
@@ -93,6 +83,34 @@ var browser_conf = {
                     //'fields': [],
                     //"respects": []
                   },
+
+                  {
+                    'name': 'coci_citations',
+                    'label': 'COCI',
+                    'id': 'cits_in_time',
+                    'call': 'http://opencitations.net/index/coci/api/v1/citations/[[?doi]]',
+                    'format': 'json',
+                    'handle': handle_self_citations,
+                    'handle_params': {'type':'In the Citations'},
+                    'targets': 'view.[[self_citation]]',
+                    'valid_data':[not_empty,not_undefined]
+                    //'fields': [],
+                    //"respects": []
+                  },
+                  {
+                    'name': 'coci_references',
+                    'label': 'COCI',
+                    'id': 'refs_in_time',
+                    'call': 'http://opencitations.net/index/coci/api/v1/references/[[?doi]]',
+                    'format': 'json',
+                    'handle': handle_self_citations,
+                    'handle_params': {'type':'In the References'},
+                    'targets': 'view.[[self_citation]]',
+                    'valid_data':[not_empty,not_undefined]
+                    //'fields': [],
+                    //"respects": []
+                  },
+
                   {
                     'name': 'coci_ramose',
                     'label': 'COCI',
@@ -100,12 +118,12 @@ var browser_conf = {
                     'call': 'https://w3id.org/oc/index/coci/api/v1/metadata/[[?doi]]',
                     'format': 'json',
                     'handle': coci_handle_title,
-                    'targets': 'header.[[crossref_title_val]]',
+                    'targets': 'header.[[title_val]]',
                     'valid_data':[not_empty,not_undefined]
                   },
                   {
                     'name': 'crossref',
-                    'label': '',
+                    'label': 'Crossref',
                     'id': 'crossref_authors',
                     'call': 'https://api.crossref.org/works/[[?doi]]',
                     'format': 'json',
@@ -123,7 +141,7 @@ var browser_conf = {
                       {
                         "fields": ["EXT-VAL"],
                         "values": ["Loading ..."],
-                        "id":["crossref_title_val"],
+                        "id":["title_val"],
                         "classes": ["header-title text-success"],
                         "param":[{'data_param': {'format':'MULTI-VAL'}}],
                         'transform': [[title_transform]],
@@ -187,11 +205,87 @@ var browser_conf = {
                                   'respects':[is_x_and_y_defined],
                                   //'width': "40px",
                                   //'height': "30px"
+                              },
+                              {
+                                  'type': 'chart',
+                                  'id': 'self_citation',
+                                  'class': 'slef-citation',
+                                  'style': 'horizontalbars',
+                                  'label': 'Self Citations',
+                                  'data_param': {'format':'X_AND_Y'},
+                                  'background_color': 'random',
+                                  'border_color': 'random',
+                                  'borderWidth': 1,
+                                  //'respects':[is_x_and_y_defined],
+                                  //'width': "40px",
+                                  //'height': "30px"
                               }
+                  ],
+                  /*
+                  "oscar": [
+                    {
+                      "query_text": "doi",
+                      "rule": "citingdoi",
+                      "label":"Citations of this work by others",
+                      "config_mod" : [
+                          {"key":"categories.[[name,document]].extra_elems" ,"value":[]},
+            							{"key":"page_limit_def" ,"value":30},
+            							{"key":"categories.[[name,document]].fields.[[title,Cited]].sort.default" ,"value":{"order": "desc"}},
+            							{"key":"progress_loader.visible" ,"value":false}
+            					]
+                    },
+                    {
+                      "query_text": "doi",
+                      "rule": "citeddoi",
+                      "label":"Outgoing references",
+                      "config_mod" : [
+                          {"key":"categories.[[name,document]].extra_elems" ,"value":[]},
+            							{"key":"page_limit_def" ,"value":30},
+            							{"key":"categories.[[name,document]].fields.[[title,Cited]].sort.default" ,"value":{"order": "desc"}},
+            							{"key":"progress_loader.visible" ,"value":false}
+            					]
+                    }
                   ]
+                  */
               }
         }
     }
+}
+
+function handle_self_citations(param) {
+  //Create the type of data according to the view you want to build
+  var all_data = {'author_self_cit':{'count':0,'label':'Author self citations'},'journal_self_cit':{'count':0,'label':'Journal self citations'}};
+  for (var i = 0; i < param.data.length; i++) {
+    var elem = param.data[i];
+
+    if (elem['author_sc'] != 'no') {
+      all_data.author_self_cit.count += 1;
+    }
+
+    if (elem['journal_sc'] != 'no') {
+      all_data.journal_self_cit.count += 1;
+    }
+  }
+
+  var data = {}
+  for (var key_date in all_data) {
+    data[all_data[key_date].label] = {'y': all_data[key_date].count, 'label': ""};
+  }
+
+  // in this case the format needed
+  // {<x-val>:<corresponding_json_obj>}
+  // <corresponding_json_obj> = {y:<y-val>, ...}
+
+  var data_obj = {};
+  data_obj['dataset'] = data;
+  if ('handle_params' in param.call_param) {
+    if ('type' in param.call_param.handle_params) {
+      data_obj = {};
+      data_obj[param.call_param.handle_params.type] = data;
+    }
+  }
+
+  browser.target_ext_call(param.call_param,data_obj);
 }
 
 function crossref_handle_author(param) {
@@ -221,7 +315,7 @@ function crossref_handle_author(param) {
     data['value'] = str_authors;
   }
 
-  browser.target_ext_call(param.call_param,data);
+  browser.target_ext_call(param.call_param,{'author_lbl':data});
 }
 
 function crossref_handle_title(param) {
@@ -234,7 +328,7 @@ function crossref_handle_title(param) {
     }
   }
 
-  browser.target_ext_call(param.call_param,data);
+  browser.target_ext_call(param.call_param,{'title_lbl':data});
 }
 
 function crossref_handle_close_cits(param) {
@@ -249,7 +343,7 @@ function crossref_handle_close_cits(param) {
     data['value'] = str_val;
   }
 
-  browser.target_ext_call(param.call_param,data);
+  browser.target_ext_call(param.call_param,{'close_cits':data});
 }
 
 function coci_handle_title(param) {
@@ -262,7 +356,7 @@ function coci_handle_title(param) {
   }
 
   var data = {'value':str_title,'source':param.call_param['label']};
-  browser.target_ext_call(param.call_param,data);
+  browser.target_ext_call(param.call_param,{'title_lbl':data});
 }
 
 function wikidata_handle_num_cits(param) {
@@ -273,11 +367,11 @@ function wikidata_handle_num_cits(param) {
       str_val = val;
     }
   }
-  var data = {'value':str_val};
-  browser.target_ext_call(param.call_param,data);
+  var data = {'value':str_val,'source':param.call_param['label']};
+  browser.target_ext_call(param.call_param,{'numcits_lbl':data});
 }
 
-function oc_ramose_handle_dates(param) {
+function coci_handle_dates(param) {
 
   //Create the type of data according to the view you want to build
   var all_data = {};
@@ -302,16 +396,31 @@ function oc_ramose_handle_dates(param) {
     data[key_date] = {'y': all_data[key_date], 'label': ""};
   }
 
+  var data_obj = {};
+  data_obj['dataset'] = data;
+  if ('handle_params' in param.call_param) {
+    if ('type' in param.call_param.handle_params) {
+      data_obj = {};
+      data_obj[param.call_param.handle_params.type] = data;
+    }
+  }
+
   // in this case the format needed
   // {<x-val>:<corresponding_json_obj>}
   // <corresponding_json_obj> = {y:<y-val>, ...}
-  browser.target_ext_call(param.call_param,data);
+  browser.target_ext_call(param.call_param,data_obj);
 }
 
 function handle_num_cits_in_coci(param) {
-  var data = {'value':param.data.length};
-  browser.target_ext_call(param.call_param,data);
+  var data = {'value':param.data.length,'source':param.call_param['label']};
+  browser.target_ext_call(param.call_param,{'numcits_lbl':data});
 }
+
+
+/**************/
+
+
+
 
 function call_coci_oscar(param, fun_view_callbk) {
   var call_url = "file:///Users/ivan.heibi/opencitations/oscar/search-coci.html?text="+encodeURIComponent(param["str_doi"])+"&rule="+encodeURIComponent(param["rule_name"]);
@@ -383,6 +492,13 @@ function timespan_translate(str) {
 
   return new_str;
 }
+
+//Events handle
+function handle_onclick(it){
+  console.log(it);
+}
+
+
 
 //Heuristics
 function more_than_zero(val){

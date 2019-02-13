@@ -18,6 +18,8 @@ var browser = (function () {
 		var contents = null;
 		var one_result = null;
 
+		var COLORS = ["#ff4d4d","#4d79ff","#8c66ff","#71da71"];
+
 		/*it's a document or an author*/
 		function _get_category(resource_text, exclude_list = []) {
 
@@ -234,6 +236,7 @@ var browser = (function () {
 
 		function target_ext_call(call_param, data){
 
+			var dataset_data = data[Object.keys(data)[0]];
 			var splits_dot = call_param.targets.split('.');
 			var index = 0;
 			var target_type = null;
@@ -257,7 +260,7 @@ var browser = (function () {
 			*/
 
 			var content_param = search_content_item(target_type,target_id);
-			if (b_util.check_data_validity(call_param,data)) {
+			if (b_util.check_data_validity(call_param,dataset_data)) {
 				if (_update_ext_source_data_post(call_param.targets,data,content_param)) {
 						b_htmldom.update_html_from_ext_source(target_type, target_id, call_param.targets, call_param.id);
 				}
@@ -292,33 +295,43 @@ var browser = (function () {
 					}
 				}
 
+				//the new data to add and the name of its corresponding dataset
 				var new_data = data;
+				var dataset_name = Object.keys(data)[0];
+
+				//switch according to the format of the data
 				switch (format_data) {
 						case 'X_AND_Y':
 							if (flag_first_data) {
 								ext_source_data_post[target_content_id]['data'] = {'value':null,'data':{}};
 							}
-							__update_x_and_y(new_data);
-							__operation_x_and_y();
-							__normalize_x_and_y();
+							//if an update occured
+							if(__update_x_and_y(new_data)){
+								__operation_x_and_y();
+								__normalize_x_and_y();
+							}
 							return true;
 
 						case 'MULTI-VAL':
 							if (flag_first_data) {
-								ext_source_data_post[target_content_id]['data'] = {'value':null,'data':[]};
+								ext_source_data_post[target_content_id]['data'] = {'value':null,'data':{}};
 							}
-							__update_multi_val(new_data);
-							__operation_multi_val();
-							__normalize_multi_val();
+							if(__update_one_val(new_data)){
+								__operation_one_val();
+								console.log(ext_source_data_post[target_content_id]['data']);
+								__normalize_multi_val();
+							}
 							return true;
 
 						case 'ONE-VAL':
 							if (flag_first_data) {
-								ext_source_data_post[target_content_id]['data'] = {};
+								ext_source_data_post[target_content_id]['data'] = {'value':null,'data':{}};
 							}
-							__update_one_val(new_data);
-							__operation_one_val();
-							__normalize_one_val();
+							if(__update_one_val(new_data)){
+								//console.log(ext_source_data_post[target_content_id]['data']);
+								__operation_one_val();
+								__normalize_one_val();
+							}
 							return true;
 
 						default:
@@ -329,36 +342,34 @@ var browser = (function () {
 
 				//*X_AND_Y DATA UPDATE*//
 				function __update_x_and_y(data) {
+
+					var new_data = data;
 					var current_data = ext_source_data_post[target_content_id]['data'].data;
-					for (var x_key in data) {
-						var cor_val = data[x_key];
+					if (!(dataset_name in current_data)) {
+						ext_source_data_post[target_content_id]['data'].data[dataset_name] = data[dataset_name];
+						return true;
+					}
 
-						var flag_insert_it = true;
-						if (x_key in current_data) {
-							if (cor_val.y == current_data[x_key].y) {
-								flag_insert_it = false;
+					current_data = ext_source_data_post[target_content_id]['data'].data[dataset_name];
+					new_data = data[dataset_name];
+					var updated_flag = false;
+
+					for (var x_key in new_data) {
+							var cor_val = new_data[x_key];
+
+							var flag_insert_it = true;
+							if (x_key in current_data) {
+								if (cor_val.y == current_data[x_key].y) {
+									flag_insert_it = false;
+								}
 							}
-						}
 
-						if (flag_insert_it) {
-							ext_source_data_post[target_content_id]['data'].data[x_key] = cor_val;
-						}
-
+							if (flag_insert_it) {
+								updated_flag = true;
+								ext_source_data_post[target_content_id]['data'].data[dataset_name][x_key] = cor_val;
+							}
 					}
-
-					//format data in json
-					/*
-					var all_data_json = {}
-					for (var i = 0; i < current_data.x.length; i++) {
-						if (!(current_data.x[i] in all_data_json)) {
-							all_data_json[current_data.x[i]] = [];
-						}
-						all_data_json[current_data.x[i]].push({
-							'y': current_data.y[i]
-						});
-					}
-					return all_data_json;
-					*/
+					return updated_flag;
 
 				}
 				function __operation_x_and_y(){
@@ -366,23 +377,27 @@ var browser = (function () {
 					if ('data_param' in content_param) {
 						if ('operation' in content_param.data_param) {
 								for (var op in content_param.data_param.operation) {
-									___exec_operation(op);
+									//for each dataset do operations
+									var current_data = ext_source_data_post[target_content_id]['data'].data;
+									for (var dataset_key in current_data) {
+										___exec_operation(op,current_data[dataset_key],dataset_key);
+									}
 								}
 						}
 					}
 
-					function ___exec_operation(op) {
+					function ___exec_operation(op,dataset_data,dataset_name) {
 						switch (op) {
 							case 'sort':
 								if (content_param.data_param.operation[op]['sort'] == true){
 									//sort the data
-								  sorted_all_data = {}
-								  Object.keys(data)
+								  var sorted_all_data = {};
+								  Object.keys(dataset_data)
 								      .sort()
 								      .forEach(function(v, i) {
-								          sorted_all_data[v] = ext_source_data_post[target_content_id]['data'].data[v];
+								          sorted_all_data[v] = current_data[dataset_name][v];
 								       });
-									ext_source_data_post[target_content_id]['data'].data = sorted_all_data;
+									ext_source_data_post[target_content_id]['data'].data[dataset_name] = sorted_all_data;
 								}
 								break;
 							default:
@@ -390,139 +405,183 @@ var browser = (function () {
 					}
 				}
 				function __normalize_x_and_y() {
-				  var normal_data = {'x':[],'y':[],'label':[]}
-				  for (var key_date in ext_source_data_post[target_content_id]['data'].data) {
-				    normal_data.x.push(key_date);
-						var elem_key = ext_source_data_post[target_content_id]['data'].data[key_date];
+					var current_data = ext_source_data_post[target_content_id]['data'].data;
+					var final_normal_data = {'labels':[],'datasets':[]};
 
-						if ('y' in elem_key) {
-							normal_data.y.push(elem_key.y);
+					//build labels first
+					for (var dataset_key in current_data) {
+						for (var key_date in current_data[dataset_key]) {
+							if (final_normal_data.labels.indexOf(key_date) == -1) {
+								final_normal_data.labels.push(key_date);
+							}
 						}
+					}
 
-						if ('label' in elem_key) {
-							normal_data.label.push(elem_key.label);
+					//now build the dataset
+					var color_index = 0;
+					for (var dataset_key in current_data) {
+						var normal_data = {'data':[],'yAxisID': dataset_key,'label':dataset_key, 'backgroundColor': COLORS[color_index]}
+						color_index = (color_index + 1) % color_index.length;
+						for (var i = 0; i < final_normal_data.labels.length; i++) {
+							var xlbl_val = final_normal_data.labels[i];
+
+							if (xlbl_val in current_data[dataset_key]) {
+								normal_data.data.push(current_data[dataset_key][xlbl_val].y);
+							}else {
+								//OR null also
+								normal_data.data.push(0);
+							}
 						}
-				  }
-					ext_source_data_post[target_content_id]['data'].value = normal_data;
+						final_normal_data.datasets.push(normal_data);
+					}
+
+					ext_source_data_post[target_content_id]['data'].value = final_normal_data;
 				}
 
 				//*ONE-VAL DATA UPDATE*//
 				function __update_one_val(data){
-					var current_data_value = ext_source_data_post[target_content_id]['data'];
-					var update_it = true;
+					var current_data = ext_source_data_post[target_content_id]['data'].data;
 
-					//update rules
-					if (!(flag_first_data)) {
-						if ((current_data_value != data.value)&&(current_data_value.toLowerCase() != data.value.toLowerCase()))  {
-							update_it = false;
+					if (!(dataset_name in current_data)) {
+						ext_source_data_post[target_content_id]['data'].data[dataset_name] = [data[dataset_name]];
+						return true;
+					}
+
+					current_data = ext_source_data_post[target_content_id]['data'].data[dataset_name];
+					new_data = data[dataset_name];
+
+					var update_it = false;
+					for (var i = 0; i < current_data.length; i++) {
+						var elem = current_data[i];
+						if ((new_data.value != elem.value)&&(new_data.value.toLowerCase() != elem.value.toLowerCase()))  {
+							update_it = true;
+							break;
+						}else {
+							if (elem.source != new_data.source) {
+								update_it = true;
+								break;
+							}
 						}
 					}
 
 					if (update_it) {
-						ext_source_data_post[target_content_id]['data'] = data;
+						ext_source_data_post[target_content_id]['data'].data[dataset_name].push(data[dataset_name]);
+						return true;
 					}
+
+					return false;
 				}
 				function __operation_one_val(){
 					//check if we have operations to apply on the data
 					if ('data_param' in content_param) {
 						if ('operation' in content_param.data_param) {
 								for (var op in content_param.data_param.operation) {
-									ext_source_data_post[target_content_id]['data'] = ___exec_operation(op,content_param.data_param.operation,ext_source_data_post[target_content_id]['data']);
+									//for each dataset do operations
+									var current_data = ext_source_data_post[target_content_id]['data'].data;
+									for (var dataset_key in current_data) {
+										___exec_operation(op,current_data[dataset_key],dataset_key);
+									}
 								}
 						}
 					}
 
-					function ___exec_operation(op,content_data_operation,data) {
+					function ___exec_operation(op,dataset_data,dataset_name) {
 						switch (op) {
 							case 'sort':
-								return data;
+								if (content_param.data_param.operation[op]['sort'] == true){
+									//sort the data
+								  var sorted_all_data = {};
+								  Object.keys(dataset_data)
+								      .sort()
+								      .forEach(function(v, i) {
+								          sorted_all_data[v] = current_data[dataset_name][v];
+								       });
+									ext_source_data_post[target_content_id]['data'].data[dataset_name] = sorted_all_data;
+								}
+								break;
 							default:
-								return data;
 						}
 					}
 				}
 				function __normalize_one_val(){
-					//already ok
+					var current_data = ext_source_data_post[target_content_id]['data'].data;
+					var final_normal_data = "";
+					//we have only one dataset in this case
+					for (var key_dataset in current_data) {
+						for (var i = 0; i < current_data[key_dataset].length; i++) {
+							var elem = current_data[key_dataset][i];
+							if ((elem.value == "") || (elem.value == null)){
+								continue;
+							}else {
+									final_normal_data = elem.value;
+									break;
+							}
+						}
+					}
+					ext_source_data_post[target_content_id]['data'].value = final_normal_data;
 				}
 
 				//*MULTI-VAL DATA UPDATE*//
-				function __update_multi_val(data){
-					var update_it = true;
-
-					if (!(flag_first_data)) {
-						var current_ext_data = ext_source_data_post[target_content_id]['data'].data;
-
-						var found_it_flag = false;
-						for (var i = 0; i < current_ext_data.length; i++) {
-								var current_ext_data_value = current_ext_data[i].value;
-								if ((current_ext_data_value != null) && (current_ext_data_value != undefined)){
-									if ((current_ext_data_value == data.value) || (current_ext_data_value.toLowerCase() == data.value.toLowerCase()))
-									{
-										found_it_flag = true;
-									}
-								}
-						}
-						update_it = !(found_it_flag)
-					}
-
-					if (update_it) {
-						ext_source_data_post[target_content_id]['data'].data.push(data);
-					}
-				}
-				function __operation_multi_val(){
-					//check if we have operations to apply on the data
-					if ('data_param' in content_param) {
-						if ('operation' in content_param.data_param) {
-								for (var op in content_param.data_param.operation) {
-									ext_source_data_post[target_content_id]['data'] = ___exec_operation(op,content_param.data_param.operation,ext_source_data_post[target_content_id]['data']);
-								}
-						}
-					}
-
-					function ___exec_operation(op,content_data_operation,data) {
-						switch (op) {
-							case 'sort':
-								return data;
-							default:
-								return data;
-						}
-					}
-				}
 				function __normalize_multi_val(){
 
-					var current_ext_data = ext_source_data_post[target_content_id]['data'].data;
+					var current_data = ext_source_data_post[target_content_id]['data'].data;
+					//we have only one dataset in this case
+					var dict_index = {};
+					for (var key_dataset in current_data) {
+						for (var i = 0; i < current_data[key_dataset].length; i++) {
+							var elem = current_data[key_dataset][i];
+							if ((elem.value == "") || (elem.value == null)){
+								continue;
+							}else {
+									//rules to consider multi elements
+									var similar_entry = -1;
+									for (var key_val in dict_index) {
+										if (elem.value.toLowerCase() == key_val.toLowerCase()) {
+											similar_entry = key_val;
+										}
+									}
 
-					var num_sources = 0;
-					for (var i = 0; i < current_ext_data.length; i++) {
-						if (current_ext_data[i].value != null) {
-							num_sources += 1;
+									if (similar_entry == -1) {
+										dict_index[elem.value] = [elem.source];
+									}else {
+										//check source fo each element
+										var insert_it = true;
+										for (var j = 0; j < dict_index[similar_entry].length; j++) {
+											if (elem.source.toLowerCase() == dict_index[similar_entry][j].toLowerCase()) {
+												insert_it = false;
+											}
+										}
+
+										if (insert_it) {
+											dict_index[similar_entry].push(elem.source);
+										}
+									}
+
+							}
 						}
 					}
+					console.log(dict_index);
 
-					var normal_data_value = null;
-
-					for (var i = 0; i < current_ext_data.length; i++) {
-						if (current_ext_data[i].value == null) {
-							continue;
-						}
-
-						if (normal_data_value == null) {
-							normal_data_value = "";
-						}
-
+					var final_normal_data = "";
+					for (var key_val in dict_index) {
+						var lbl = key_val;
 						var coif = i+1;
 						if (coif > 4) {
 							coif = 4;
 						}
 						var size_perc = (1/coif*40)+60;
-						var source_lbl = "*Source: "+current_ext_data[i].source;
-						if (num_sources <= 1) {
-							source_lbl = "";
-						}
-						normal_data_value = normal_data_value + "<div style='font-size: "+(size_perc).toString()+"%'>"+ current_ext_data[i].value +"</span><span style='font-size: "+(50).toString()+"%; color: black'>  "+source_lbl+ " </span></div>";
-					}
 
-					ext_source_data_post[target_content_id]['data'].value = normal_data_value;
+						//ALL SOURCES
+						var source_lbl = "*Source: ";
+						for (var i = 0; i < dict_index[key_val].length; i++) {
+							var source = dict_index[key_val][i];
+							var source_lbl = source_lbl+source+ ", ";
+						}
+						source_lbl = source_lbl.slice(0,source_lbl.length-2);
+
+						final_normal_data = final_normal_data + "<div style='font-size: "+(size_perc).toString()+"%'>"+ lbl +"</span><span style='font-size: "+(50).toString()+"%; color: black'>  "+source_lbl+ " </span></div>";
+					}
+					ext_source_data_post[target_content_id]['data'].value = final_normal_data;
 				}
 			}
 		}
@@ -680,7 +739,6 @@ var browser = (function () {
 		}
 
 		function assign_oscar_results(oscar_key, results, cat_conf, empty_res){
-
 			pending_oscar_calls = pending_oscar_calls - 1;
 			if (empty_res) {
 				//get rule key from regex
@@ -1145,6 +1203,8 @@ var b_util = (function () {
 
 var b_htmldom = (function () {
 
+	var dict_charts = {};
+
 	var oscar_container = document.getElementById("search");
 	var loader_container = document.getElementById("loader_container");
 	var browser_container = document.getElementById("browser");
@@ -1583,34 +1643,58 @@ var b_htmldom = (function () {
 			var a_view_dom = _populate_a_view_dom(view_key, a_view_data, a_view_div);
 
 			function _build_a_view_content(view_key, a_view_data) {
-
-				var view_div = document.createElement("div");        // Create a <button> element
-				view_div.setAttribute("id", view_key);
-				if ('class' in a_view_data.param) {
-					view_div.setAttribute("class", "view_elem "+a_view_data.param['class']);
+				var view_div = document.getElementById(view_key);
+				if (view_div == undefined){
+					view_div = document.createElement("div");        // Create a <button> element
+					view_div.setAttribute("id", view_key);
+					if ('class' in a_view_data.param) {
+						view_div.setAttribute("class", "view_elem "+a_view_data.param['class']);
+					}
+					view_container.appendChild(view_div);
 				}
-				view_container.appendChild(view_div);
 				return view_div;
 			}
 			function _populate_a_view_dom(view_key, a_view_data, a_view_div){
 				var a_view_data_param = a_view_data.param;
+
+				var is_updating = true;
+				//reset it first
+				if (document.getElementById(view_key+"_canavas") == undefined){
+					//create it
+					var canavas_dom = document.createElement("canvas");
+					canavas_dom.setAttribute("id", view_key+"_canavas");
+					if ('width' in a_view_data_param) {
+						canavas_dom.style.width =  a_view_data_param.width;
+					}
+					if ('height' in a_view_data_param) {
+						canavas_dom.style.height =  a_view_data_param.height;
+					}
+					a_view_div.appendChild(canavas_dom);
+					is_updating = false;
+				}
+				document.getElementById(view_key+"_canavas").innerHTML = "";
+
+
 				switch (a_view_data_param.type) {
 					case 'chart':
-						switch (a_view_data_param.style) {
-							case 'bars':
-							//create it
-							var canavas_dom = document.createElement("canvas");
-							canavas_dom.setAttribute("id", view_key+"_canavas");
-							if ('width' in a_view_data_param) {
-								canavas_dom.style.width =  a_view_data_param.width;
+						if (view_key in dict_charts) {
+							if (dict_charts[view_key] != null) {
+								console.log(dict_charts[view_key]);
+								__update_hor_chart_bars_dom(a_view_data, dict_charts[view_key]);
+								//dict_charts[view_key].destroy();
+								//dict_charts[view_key] = null;
 							}
-							if ('height' in a_view_data_param) {
-								canavas_dom.style.height =  a_view_data_param.height;
-							}
-							a_view_div.appendChild(canavas_dom);
-							__create_chart_bars_dom(a_view_data, a_view_data_param, view_key);
+						}
+						else {
+							switch (a_view_data_param.style) {
+								case 'bars':
+									dict_charts[view_key] = __create_chart_bars_dom(a_view_data, a_view_data_param, view_key);
+									break;
+								case 'horizontalbars':
+									dict_charts[view_key] = __create_hor_chart_bars_dom(a_view_data, a_view_data_param, view_key);
 
-							break;
+									break;
+							}
 						}
 						break;
 					default:
@@ -1622,37 +1706,83 @@ var b_htmldom = (function () {
 					var canavas_dom = document.getElementById(view_key+"_canavas");
 
 					var ctx = canavas_dom.getContext('2d');
-					var data = a_view_data.data;
-					//console.log(a_view_data);
+					var chart_data = a_view_data.data.value;
 
 					var myChart = new Chart(ctx, {
 					    type: 'bar',
-					    data: {
-					        labels: data.value.x,
-					        datasets: [{
-					            label: param.label,
-					            data: data.value.y,
-					            //backgroundColor: [],
-					            //borderColor: [],
-					            borderWidth: 1
-					        }]
-					    },
+							data: {
+								labels: chart_data.labels,
+								datasets: chart_data.datasets,
+							},
 					    options: {
-									//responsive: true,
-									//maintainAspectRatio: false,
-					        scales: {
-					            yAxes: [{
-													barPercentage: 0.2,
-					                ticks: {
-					                    beginAtZero:true
-					                }
-					            }]
-					        }
+									responsive: true,
+									tooltips: {
+										mode: 'index',
+										intersect: true
+									},
+									scales: __build_scales(chart_data)
+					    }
+					});
+					return myChart;
+				}
+				function __create_hor_chart_bars_dom(a_view_data, param, view_key) {
+
+					var canavas_dom = document.getElementById(view_key+"_canavas");
+
+					var ctx = canavas_dom.getContext('2d');
+					var chart_data = a_view_data.data.value;
+
+					var myChart = new Chart(ctx, {
+					    type: 'bar',
+							data: {
+								labels: chart_data.labels,
+								datasets: chart_data.datasets,
+							},
+					    options: {
+									responsive: true,
+					        scales: __build_scales(chart_data)
 					    }
 					});
 
-					return canavas_dom;
+					return myChart;
 
+				}
+				function __update_hor_chart_bars_dom(a_view_data, mychart) {
+					var chart_data = a_view_data.data.value;
+					mychart.data.labels = chart_data.labels;
+					mychart.data.dataset = chart_data.datasets;
+					mychart.options.scales = __build_scales(chart_data);
+					mychart.update();
+				}
+
+				function __build_scales(chart_data) {
+					var final_scales = {};
+					var yAxes = [];
+					var pos_axis = "left";
+					for (var i = 0; i < chart_data.datasets.length; i++) {
+						var ds_i = chart_data.datasets[i];
+						yAxes.push({
+							ticks: {
+									beginAtZero:true
+							},
+							type: 'linear', // only linear but allow scale type registration. This allows extensions to exist solely for log scale for instance
+							display: true,
+							position: pos_axis,
+							id: ds_i['yAxisID'],
+							gridLines: {
+								drawOnChartArea: false
+							}
+						});
+
+						if (pos_axis == "left") {
+								pos_axis = "right";
+						}else {
+							pos_axis = "left";
+						}
+
+					}
+					final_scales['yAxes'] = yAxes;
+					return final_scales;
 				}
 			}
 		}

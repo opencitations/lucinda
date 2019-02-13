@@ -12,6 +12,9 @@ body.lucinda-cover{
 #browser_info{
   min-height: 200px;
   float:left;
+  display: inline-block;
+  font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+  max-width: 70%;
 }
 
 #browser_header{
@@ -34,11 +37,9 @@ body.lucinda-cover{
   border-color: #f2f2f2;
 }
 
-.browser-info{
-  display: inline-block;
-  font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
-  /*background-color: rgba(243, 230, 255,0.17);*/
-  width: 70%;
+#browser_view div{
+  padding: 2%;
+  float:left;
 }
 
 #browser_view_switch {
@@ -200,6 +201,7 @@ body.lucinda-cover{
     width: 100%;
   }
   #browser_info{
+    max-width: 100%;
     width: 100%;
   }
   .browser-details{
