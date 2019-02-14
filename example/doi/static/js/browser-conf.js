@@ -8,6 +8,7 @@ var browser_conf = {
 
         "document": {
               "rule": "(10.\\d{4,9}\/[-._;()/:A-Za-z0-9][^\\s]+)",
+              "heuristics": [lower_case],
               "query": [
                 `
                 SELECT ?doi_iri ?doi
@@ -143,7 +144,7 @@ var browser_conf = {
                         "values": ["Loading ..."],
                         "id":["title_val"],
                         "classes": ["header-title text-success"],
-                        "param":[{'data_param': {'format':'MULTI-VAL'}}],
+                        "param":[{'data_param': {'format':'MULTI-VAL','show_source':true}}],
                         'transform': [[title_transform]],
                         'respects':[[not_undefined,not_unknown]]
                       },
@@ -397,7 +398,7 @@ function coci_handle_dates(param) {
   }
 
   var data_obj = {};
-  data_obj['dataset'] = data;
+  data_obj['Citations (COCI)'] = data;
   if ('handle_params' in param.call_param) {
     if ('type' in param.call_param.handle_params) {
       data_obj = {};
@@ -554,4 +555,8 @@ function title_transform(val) {
     return "Element not found"
   }
   return val;
+}
+
+function lower_case(str){
+  return str.toLowerCase();
 }

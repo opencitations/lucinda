@@ -55,6 +55,20 @@ var browser = (function () {
 			return turtle_prefixes;
 		}
 
+		/*apply heuristics to the original value*/
+		function _apply_heuristics(val,category) {
+			var final_val = val;
+			if ('heuristics' in browser_conf_json.categories[category]) {
+				var list_h = browser_conf_json.categories[category].heuristics;
+				for (var i = 0; i < list_h.length; i++) {
+					final_val = Reflect.apply(list_h[i],undefined,[final_val]);
+				}
+			}
+
+			return final_val;
+		}
+
+
 		/*THE MAIN FUNCTION CALL
 		call the sparql endpoint and do the query*/
 		function do_sparql_query(resource_iri, given_category = null, exclude_list = [], call_fun = null){
@@ -75,6 +89,8 @@ var browser = (function () {
 
 				//build the sparql query in turtle format
 				var sparql_query = _build_turtle_prefixes() + _build_turtle_query(browser_conf_json.categories[category].query);
+				//apply heuristics
+				resource_iri = _apply_heuristics(resource_iri, category);
 				sparql_query = sparql_query.replace(/\[\[VAR\]\]/g, resource_iri);
 
 				//use this url to contact the sparql_endpoint triple store
@@ -421,7 +437,7 @@ var browser = (function () {
 					var color_index = 0;
 					for (var dataset_key in current_data) {
 						var normal_data = {'data':[],'yAxisID': dataset_key,'label':dataset_key, 'backgroundColor': COLORS[color_index]}
-						color_index = (color_index + 1) % color_index.length;
+						color_index = color_index + 1;
 						for (var i = 0; i < final_normal_data.labels.length; i++) {
 							var xlbl_val = final_normal_data.labels[i];
 
@@ -572,14 +588,25 @@ var browser = (function () {
 						var size_perc = (1/coif*40)+60;
 
 						//ALL SOURCES
-						var source_lbl = "*Source: ";
-						for (var i = 0; i < dict_index[key_val].length; i++) {
-							var source = dict_index[key_val][i];
-							var source_lbl = source_lbl+source+ ", ";
+						var show_source_flag = false;
+						if ('show_source' in content_param.data_param) {
+							if (content_param.data_param.show_source == true) {
+								show_source_flag = true;
+							}
 						}
-						source_lbl = source_lbl.slice(0,source_lbl.length-2);
 
-						final_normal_data = final_normal_data + "<div style='font-size: "+(size_perc).toString()+"%'>"+ lbl +"</span><span style='font-size: "+(50).toString()+"%; color: black'>  "+source_lbl+ " </span></div>";
+						if (show_source_flag) {
+							//var source_lbl = "*Source: ";
+							var source_lbl = "[";
+							for (var i = 0; i < dict_index[key_val].length; i++) {
+								var source = dict_index[key_val][i];
+								var source_lbl = source_lbl+source+ ",";
+							}
+							source_lbl = source_lbl.slice(0,source_lbl.length-1)+"]";
+							var source_dom = "<span style='float:right; font-size: "+(50).toString()+"%; font-style: oblique; color: black'>"+source_lbl;
+						}
+
+						final_normal_data = final_normal_data + "<div style='font-size: "+(size_perc).toString()+"%'>"+ lbl +"</span>"+source_dom+"</div>";
 					}
 					ext_source_data_post[target_content_id]['data'].value = final_normal_data;
 				}
@@ -1680,7 +1707,9 @@ var b_htmldom = (function () {
 						if (view_key in dict_charts) {
 							if (dict_charts[view_key] != null) {
 								console.log(dict_charts[view_key]);
-								__update_hor_chart_bars_dom(a_view_data, dict_charts[view_key]);
+								dict_charts[view_key].destroy();
+								dict_charts[view_key] = __create_hor_chart_bars_dom(a_view_data, a_view_data_param, view_key);
+								//__update_hor_chart_bars_dom(a_view_data, dict_charts[view_key]);
 								//dict_charts[view_key].destroy();
 								//dict_charts[view_key] = null;
 							}
@@ -1747,13 +1776,17 @@ var b_htmldom = (function () {
 					return myChart;
 
 				}
-				function __update_hor_chart_bars_dom(a_view_data, mychart) {
+				/*function __update_hor_chart_bars_dom(a_view_data, mychart) {
 					var chart_data = a_view_data.data.value;
 					mychart.data.labels = chart_data.labels;
-					mychart.data.dataset = chart_data.datasets;
-					mychart.options.scales = __build_scales(chart_data);
+					//console.log(chart_data.datasets);
+					//chart_data.datasets[1].data[0] = 4;
+					console.log(chart_data);
+					mychart.config.data = {labels: chart_data.labels, datasets: chart_data.datasets};
+					console.log(mychart);
 					mychart.update();
-				}
+
+				}*/
 
 				function __build_scales(chart_data) {
 					var final_scales = {};
