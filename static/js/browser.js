@@ -804,7 +804,7 @@ var browser = (function () {
 
 				b_htmldom.loader(false);
 
-				//console.log(oscar_data);
+				console.log(oscar_data);
 				//build oscar menu
 				b_htmldom.build_oscar(resource_res, {"oscar": oscar_content});
 			}
