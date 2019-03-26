@@ -1,6 +1,66 @@
+//GLOBALS
+var lucinda_tags = document.getElementsByClassName("__lucinda__");
+var lucinda_doms = [];
+
+//Get LUCINDA parameters from the HTML tag
+for (var i = 0; i < lucinda_tags.length; i++) {
+	var lucinda_container = lucinda_tags[i];
+
+	var data_content = ['switch','header','details','metrics'];
+	if(lucinda_container.getAttribute('data-content') != undefined){
+		data_content = lucinda_container.getAttribute('data-content');
+		data_content = data_content.split(" ");
+	}
+
+	lucinda_doms.push(
+		{
+			'container': lucinda_container,
+			'data-content': data_content
+		}
+	);
+}
+
+//Build all the inner elements
+for (var i = 0; i < lucinda_doms.length; i++) {
+
+	var str_html_inner = '';
+
+	//LUCINDA contents
+	if (lucinda_doms[i]["data-content"].length != 0) {
+			var switch_index = lucinda_doms[i]["data-content"].indexOf('switch');
+			if (switch_index != -1){
+				str_html_inner = str_html_inner + '<div id="browser_extra" class="browser-extra"><div id="browser_view_switch"></div></div>';
+			}
+
+			var header_index = lucinda_doms[i]["data-content"].indexOf('header');
+			var details_index = lucinda_doms[i]["data-content"].indexOf('details');
+
+			if ((header_index != -1) || (details_index != -1)){
+				str_html_inner = str_html_inner + '<div id="browser_info" class="browser-info">';
+				if (header_index != -1){
+					str_html_inner = str_html_inner + '<div id="browser_header" class="browser-header"></div>';
+				}
+				if (details_index != -1){
+					str_html_inner = str_html_inner + '<div id="browser_details" class="browser-details"></div>';
+				}
+				str_html_inner = str_html_inner + '</div>';
+			}
+
+			var metrics_index = lucinda_doms[i]["data-content"].indexOf('metrics');
+			if (metrics_index != 0){
+				str_html_inner = str_html_inner + '<div id="browser_metrics" class="browser-metrics"></div>';
+			}
+
+
+	}
+
+	//put it inside the page
+	lucinda_doms[i]['container'].innerHTML = '<div id="browser" class="browser">'+ str_html_inner + '</div>';
+}
+
 
 var browser = (function () {
-	
+
 
 		var resource = null;
 		var resource_res = null;
