@@ -1,7 +1,7 @@
-# LUCINDA
+<img src="doc/lucinda_logo-v2.0.png" alt="drawing" width="350"/>
+
 ### Is an RDF data browser Javascript-based application.  
+Lucinda is a general RDF-resource browser which could be configured to work with any triplestore providing a SPARQL-endpoint address. LUCINDA can also integrate in it [OSCAR](https://github.com/opencitations/oscar), The OpenCitations RDF Search Application.  
+In this repository you can find few examples of Lucinda usage. Currently we have tested Lucinda with two different projects: [OpenCitations](http://opencitations.net/), and [Wikidata](http://wikidata.org/). For each one of these projects we have its corresponding .html main entry, try the Wikidata example, presented at [Wikicite2018](https://meta.wikimedia.org/wiki/WikiCite_2018), at [example/wikidata/browser.html](https://opencitations.github.io/lucinda/example/wikidata/browser.html?browse=Q30536251) .
 
-This  idea came out with regard to the [OpenCitations](http://opencitations.net/) project, which contains an open repository of scholarly citation data in RDF format, we would like to make accesible for any user to search and explore. 
-LUCINDA uses [OSCAR](https://github.com/ivanhb/OSCAR) and its features: which is a general search application for rdf data specially designed for open citations.
 
-One of the main characteristics of LUCINDA is its adaptability to work with any other RDF triplestore. In order to do that there is a configuration file that could be adopted according to the SPARQL endpoint we wish to integrate.
