@@ -1,3 +1,14 @@
+body {
+  font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+  padding-right: 5%;
+  padding-left: 5%;
+  text-align: center;
+}
+
+.site-wrapper-inner {
+  vertical-align: middle;
+}
+
 
 body.lucinda-cover{
   width:90%;

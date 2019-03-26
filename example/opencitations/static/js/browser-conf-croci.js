@@ -84,11 +84,26 @@ var browser_conf = {
                 {"fields": ["citing_doi","FREE-TEXT","cited_doi"], "values":[null," cites ", null], "classes":["header-title text-success","metric-entry text-capitalize mark","header-title text-info"]},
                 //{"fields": ["subtitle"], "classes":["sub-header-title"]},
                 {"classes":["10px"]},
-                {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Citing entity: ", "call_crossref_4citation_citing"], "classes": ["subtitle","text-success"]},
-                {"classes":["8px"]},
-                {"fields": ["FREE-TEXT", "EXT_DATA"], "values": ["Cited entity: ", "call_crossref_4citation_cited"], "classes": ["subtitle","text-info"]}
 
-                //{"fields": ["author"], "concat_style":{"author": "inline"}}
+                {
+                  "fields": ["FREE-TEXT", "EXT-VAL"],
+                  "values": ["Citing entity: ", "Loading ..."],
+                  "id":[null,"citing_val"],
+                  "classes": ["subtitle","subtitle text-success"],
+                  "param":[null,{'data_param': {'format':'ONE-VAL'}}],
+                  'respects':[[],[not_undefined,not_unknown]]
+                },
+
+                {"classes":["8px"]},
+
+                {
+                  "fields": ["FREE-TEXT", "EXT-VAL"],
+                  "values": ["Cited entity: ", "Loading ..."],
+                  "id":[null,"cited_val"],
+                  "classes": ["subtitle","subtitle text-info"],
+                  "param":[null,{'data_param': {'format':'ONE-VAL'}}],
+                  'respects':[[],[not_undefined,not_unknown]]
+                }
             ],
             "details": [
               {"classes":["20px"]},
@@ -108,37 +123,47 @@ var browser_conf = {
             "graphics": {
               "citations_in_time":{
               }
-            },
-            "oscar": [
-              /*{
-                "query_text": "my_iri",
-                "rule": "doc_cites_list",
-                "label":"References",
-                "config_mod" : [
-      							//{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
-      							{"key":"page_limit_def" ,"value":30},
-      							{"key":"categories.[[name,document]].fields.[[title,Cited by]].sort.default" ,"value":{"order": "desc"}},
-      							{"key":"progress_loader.visible" ,"value":false}
-      					]
+            }
+          },
+
+          "ext_sources": [
+              {
+                //A symbolic name
+                'name': 'coci',
+                //The label value used in case the source is visualized in the page
+                'label': 'COCI',
+                //A unique id
+                'id': 'coci_metadata_citing',
+                //The url call with a SPARQL var identified as [[?<VAR>]]
+                'call': 'http://opencitations.net/index/coci/api/v1/metadata/[[?citing_doi]]',
+                //The dat format of the results
+                'format': 'json',
+                //The function which handles the results retrieved after the end of the call
+                'handle': coci_handle_title,
+                //The container id to show the final results, this value could be repeated by other calls
+                'targets': 'header.[[citing_val]]',
+                //The functions which tests whether the call results are valid to be further elaborated and taken in consideration
+                'valid_data':[not_empty,not_undefined]
               },
               {
-                "query_text": "my_iri",
-                "rule": "doc_cites_me_list",
-                "label":"Citations",
-                "config_mod" : [
-      							//{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
-      							{"key":"page_limit_def" ,"value":30},
-                    //{"key":"categories.[[name,document]].fields.[[title,Cited by]].sort.default" ,"value":"REMOVE_ENTRY"},
-      							{"key":"categories.[[name,document]].fields.[[title,Year]].sort.default" ,"value":{"order": "asc"}},
-      							{"key":"progress_loader.visible" ,"value":false}
-      					]
-              }*/
-            ]
-          },
-          "ext_data": {
-            "call_crossref_4citation_citing": {"name": call_crossref_4citation, "param": {"fields":["citing_doi"],"values":[null]}},
-            "call_crossref_4citation_cited": {"name": call_crossref_4citation, "param": {"fields":["cited_doi"],"values":[null]}}
-          }
+                //A symbolic name
+                'name': 'coci',
+                //The label value used in case the source is visualized in the page
+                'label': 'COCI',
+                //A unique id
+                'id': 'coci_metadata_cited',
+                //The url call with a SPARQL var identified as [[?<VAR>]]
+                'call': 'http://opencitations.net/index/coci/api/v1/metadata/[[?cited_doi]]',
+                //The dat format of the results
+                'format': 'json',
+                //The function which handles the results retrieved after the end of the call
+                'handle': coci_handle_title,
+                //The container id to show the final results, this value could be repeated by other calls
+                'targets': 'header.[[cited_val]]',
+                //The functions which tests whether the call results are valid to be further elaborated and taken in consideration
+                'valid_data':[not_empty,not_undefined]
+              }
+          ],
     },
 
     //new category
@@ -155,9 +180,7 @@ var browser_conf = {
       "links": {
         "doi_iri": {"field":"doi_iri","prefix":""}
       },
-      "ext_data": {
-        "crossref_ref": {"name": call_crossref_4citation, "param": {"fields":["doi"],"values":[null]}}
-      },
+
       "contents":{
           "header": [
               {"classes":["40px"]},
@@ -196,51 +219,26 @@ var browser_conf = {
 }
 
 
-//"FUNC" {"name": call_crossref, "param":{"fields":[],"vlaues":[]}}
-function call_crossref(str_doi, field){
-  var call_crossref_api = "https://api.crossref.org/works/";
-  var call_url =  call_crossref_api+ encodeURIComponent(str_doi);
-
-  var result_data = "";
-  $.ajax({
-        dataType: "json",
-        url: call_url,
-        type: 'GET',
-        async: false,
-        success: function( res_obj ) {
-            if (field == 1) {
-              result_data = res_obj;
-            }else {
-              if (!b_util.is_undefined_key(res_obj,field)) {
-                result_data = b_util.get_obj_key_val(res_obj,field);
-              }
-            }
-        }
-   });
-   return result_data;
-}
-function call_crossref_4citation(str_doi){
-  var call_crossref_api = "https://citation.crosscite.org/format?doi=";
-  var suffix = "&style=apa&lang=en-US";
-  var result = "";
-
-  if (str_doi != undefined) {
-    var call_url =  call_crossref_api+str_doi+suffix;
-    //var result_data = "...";
-    $.ajax({
-          url: call_url,
-          type: 'GET',
-          async: false,
-          success: function( res ) {
-            result = res;
-          }
-     });
+function coci_handle_title(param) {
+  console.log(param);
+  var str_title = null;
+  if (param.data[0] != undefined ) {
+    var title = param.data[0]['title'];
+    if (title != undefined) {
+      str_title = "<a href='http://dx.doi.org/"+param.data[0]['doi']+"' target='_blank'>"+title +"</a>";
+    }
   }
-  return result;
+
+  var data = {'value':str_title,'source':param.call_param['label']};
+  browser.target_ext_call(param.call_param,{'title_lbl':data});
 }
+
+
+//Mapping functions
 function decodeURIStr(str) {
   return decodeURIComponent(str);
 }
+
 function timespan_translate(str) {
   var new_str = "";
   var years = 0;
@@ -287,6 +285,8 @@ function timespan_translate(str) {
   return new_str;
 }
 
+
+
 //Heuristics
 function more_than_zero(val){
   return parseInt(val) > 0
@@ -300,6 +300,32 @@ function not_unknown(val){
   return (val != 'unknown')
 }
 
+function not_undefined(val){
+  return (val != undefined)
+}
+
+function not_in_loading(val){
+  return (val != 'Loading ...');
+}
+
+function test_this(val){
+  return (val != '0');
+}
+
+function is_x_and_y_defined(val) {
+  if ((val == undefined) || (Object.keys(val).length == 0)){
+    return false;
+  }
+  if ((val.x == undefined) || (val.x == null) || (val.x.length == 0)){
+    return false;
+  }
+  if ((val.y == undefined) || (val.y == null) || (val.y.length == 0)){
+    return false;
+  }
+  return true;
+}
+
+
 function not_empty(val){
   return (val != '')
 }
@@ -308,4 +334,15 @@ function make_it_empty(val){
   if (val == 'True') {
     return '';
   }
+}
+
+function title_transform(val) {
+  if ((val == undefined) || (val == null) || (val == 'unknown')) {
+    return "Element not found"
+  }
+  return val;
+}
+
+function lower_case(str){
+  return str.toLowerCase();
 }

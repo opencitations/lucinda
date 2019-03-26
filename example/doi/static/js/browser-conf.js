@@ -1,5 +1,5 @@
 var browser_conf = {
-  "sparql_endpoint": "https://w3id.org/oc/index/coci/sparql",
+  "sparql_endpoint": "https://w3id.org/oc/index/sparql",
 
   "prefixes": [
     ],
@@ -111,7 +111,6 @@ var browser_conf = {
                     //'fields': [],
                     //"respects": []
                   },
-
                   {
                     'name': 'coci_ramose',
                     'label': 'COCI',

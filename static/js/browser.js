@@ -1,5 +1,6 @@
 
 var browser = (function () {
+	
 
 		var resource = null;
 		var resource_res = null;
