@@ -21,26 +21,28 @@ var browser_conf = {
           "query": [`
             SELECT DISTINCT ?iri ?short_iri ?shorter_coci ?citing_doi ?citing_doi_iri ?cited_doi ?cited_doi_iri ?creationdate ?timespan ?isJSelfCitation ?isASelfCitation
                 WHERE  {
-                  BIND(<https://w3id.org/oc/index/coci/[[VAR]]> as ?iri) .
-                  OPTIONAL {
-                    BIND(REPLACE(STR(?iri), 'https://w3id.org/oc/index/coci/ci/', '', 'i') as ?short_iri) .
-                    ?iri cito:hasCitingEntity ?citing_doi_iri .
-                    BIND(REPLACE(STR(?citing_doi_iri), 'http://dx.doi.org/', '', 'i') as ?citing_doi) .
-                    ?iri cito:hasCitedEntity ?cited_doi_iri .
-                    BIND(REPLACE(STR(?cited_doi_iri), 'http://dx.doi.org/', '', 'i') as ?cited_doi) .
-                    ?iri cito:hasCitationCreationDate ?creationdate .
-                    ?iri cito:hasCitationTimeSpan ?timespan .
+                  GRAPH <https://w3id.org/oc/index/croci/> {
+                      BIND(<https://w3id.org/oc/index/croci/[[VAR]]> as ?iri) .
+                      OPTIONAL {
+                        BIND(REPLACE(STR(?iri), 'https://w3id.org/oc/index/croci/ci/', '', 'i') as ?short_iri) .
+                        ?iri cito:hasCitingEntity ?citing_doi_iri .
+                        BIND(REPLACE(STR(?citing_doi_iri), 'http://dx.doi.org/', '', 'i') as ?citing_doi) .
+                        ?iri cito:hasCitedEntity ?cited_doi_iri .
+                        BIND(REPLACE(STR(?cited_doi_iri), 'http://dx.doi.org/', '', 'i') as ?cited_doi) .
+                        ?iri cito:hasCitationCreationDate ?creationdate .
+                        ?iri cito:hasCitationTimeSpan ?timespan .
+                      }
+
+                      OPTIONAL{
+                               ?iri a cito:JournalSelfCitation .
+                               BIND('True' as ?isJSelfCitation).
+                          }
+
+                      OPTIONAL{
+                               ?iri a cito:AuthorSelfCitation .
+                               BIND('True' as ?isASelfCitation).
+                          }
                   }
-
-                  OPTIONAL{
-    		               ?iri a cito:JournalSelfCitation .
-    		               BIND('True' as ?isJSelfCitation).
-    		          }
-
-                  OPTIONAL{
-    		               ?iri a cito:AuthorSelfCitation .
-    		               BIND('True' as ?isASelfCitation).
-    		          }
                 }
           `],
           "links": {
@@ -193,45 +195,6 @@ var browser_conf = {
   }
 }
 
-
-function call_coci_oscar(param, fun_view_callbk) {
-  var call_url = "file:///Users/ivan.heibi/opencitations/oscar/search-coci.html?text="+encodeURIComponent(param["str_doi"])+"&rule="+encodeURIComponent(param["rule_name"]);
-  var result_data = "";
-  $.ajax({
-        dataType: "json",
-        url: call_url,
-        type: 'GET',
-        async: false,
-        success: function( res_obj ) {
-            result_data = res_obj;
-        }
-   });
-   console.log(result_data);
-   return result_data;
-}
-
-function call_coci_ramose(str_doi, field) {
-  var call_ramose_api_metadata = "http://opencitations.net/index/coci/api/v1/metadata/";
-  var call_full = call_ramose_api_metadata + encodeURIComponent(str_doi);
-  var result_data = "";
-  $.ajax({
-        dataType: "json",
-        url: call_full,
-        type: 'GET',
-        async: false,
-        success: function( res_obj ) {
-            if (field == 1) {
-              result_data = res_obj[0];
-            }else {
-              if (!b_util.is_undefined_key(res_obj[0],field)) {
-                result_data = b_util.get_obj_key_val(res_obj[0],field);
-              }
-            }
-        }
-   });
-   return result_data;
-
-}
 
 //"FUNC" {"name": call_crossref, "param":{"fields":[],"vlaues":[]}}
 function call_crossref(str_doi, field){
