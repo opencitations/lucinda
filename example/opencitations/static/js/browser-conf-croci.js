@@ -19,7 +19,7 @@ var browser_conf = {
     "citation": {
           "rule": "ci\/.*",
           "query": [`
-            SELECT DISTINCT ?iri ?short_iri ?shorter_coci ?citing_doi ?citing_doi_iri ?cited_doi ?cited_doi_iri ?creationdate ?timespan ?isJSelfCitation ?isASelfCitation
+            SELECT DISTINCT ?iri ?short_iri ?citing_doi ?citing_doi_iri ?cited_doi ?cited_doi_iri ?creationdate ?timespan ?isJSelfCitation ?isASelfCitation
                 WHERE  {
                   GRAPH <https://w3id.org/oc/index/croci/> {
                       BIND(<https://w3id.org/oc/index/croci/[[VAR]]> as ?iri) .
@@ -129,17 +129,17 @@ var browser_conf = {
           "ext_sources": [
               {
                 //A symbolic name
-                'name': 'coci',
+                'name': 'croci',
                 //The label value used in case the source is visualized in the page
-                'label': 'COCI',
+                'label': 'CROCI',
                 //A unique id
-                'id': 'coci_metadata_citing',
+                'id': 'croci_metadata_citing',
                 //The url call with a SPARQL var identified as [[?<VAR>]]
-                'call': 'http://opencitations.net/index/coci/api/v1/metadata/[[?citing_doi]]',
+                'call': 'http://opencitations.net/index/croci/api/v1/metadata/[[?citing_doi]]',
                 //The dat format of the results
                 'format': 'json',
                 //The function which handles the results retrieved after the end of the call
-                'handle': coci_handle_title,
+                'handle': croci_handle_title,
                 //The container id to show the final results, this value could be repeated by other calls
                 'targets': 'header.[[citing_val]]',
                 //The functions which tests whether the call results are valid to be further elaborated and taken in consideration
@@ -147,17 +147,17 @@ var browser_conf = {
               },
               {
                 //A symbolic name
-                'name': 'coci',
+                'name': 'croci',
                 //The label value used in case the source is visualized in the page
-                'label': 'COCI',
+                'label': 'CROCI',
                 //A unique id
-                'id': 'coci_metadata_cited',
+                'id': 'croci_metadata_cited',
                 //The url call with a SPARQL var identified as [[?<VAR>]]
-                'call': 'http://opencitations.net/index/coci/api/v1/metadata/[[?cited_doi]]',
+                'call': 'http://opencitations.net/index/croci/api/v1/metadata/[[?cited_doi]]',
                 //The dat format of the results
                 'format': 'json',
                 //The function which handles the results retrieved after the end of the call
-                'handle': coci_handle_title,
+                'handle': croci_handle_title,
                 //The container id to show the final results, this value could be repeated by other calls
                 'targets': 'header.[[cited_val]]',
                 //The functions which tests whether the call results are valid to be further elaborated and taken in consideration
@@ -219,8 +219,7 @@ var browser_conf = {
 }
 
 
-function coci_handle_title(param) {
-  console.log(param);
+function croci_handle_title(param) {
   var str_title = null;
   if (param.data[0] != undefined ) {
     var title = param.data[0]['title'];

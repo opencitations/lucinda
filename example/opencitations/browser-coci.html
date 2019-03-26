@@ -57,7 +57,7 @@
     <script>
 
       var resource_iri = null;
-      var myRegexp = /browser-index\.html\?browse=(.*)/g;
+      var myRegexp = /browser-coci\.html\?browse=(.*)/g;
       var groups = myRegexp.exec(String(window.location.href));
       if (groups.length > 1) {resource_iri = "ci/"+groups[1];}
       browser.do_sparql_query(resource_iri);
