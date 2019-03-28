@@ -82,7 +82,7 @@ var browser_conf = {
             },*/
             "header": [
                 {"classes":["40px"]},
-                {"fields": ["citing_doi","FREE-TEXT","cited_doi"], "values":[null," cites ", null], "classes":["header-title text-success","metric-entry text-capitalize mark","header-title text-info"]},
+                {"fields": ["citing_doi","FREE-TEXT","cited_doi"], "values":[null," cites ", null], "classes":["header-title text-success","metric-entry text-capitalize","header-title text-info"]},
 
                 {"classes":["10px"]},
 

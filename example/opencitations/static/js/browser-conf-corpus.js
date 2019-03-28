@@ -113,11 +113,7 @@ var browser_conf = {
                           "title":"Loading the list of Citations and References ...",
                           //"subtitle":"Be patient - this might take several seconds!"
                           //"abort":{"title":"Abort", "href_link":""}
-                        },
-                "timeout":{
-                  "value": 90000,
-                  "link": "/search"
-                }
+                        }
             },
             "oscar": [
               {
@@ -128,7 +124,8 @@ var browser_conf = {
       							{"key":"page_limit_def" ,"value":30},
                     //{"key":"categories.[[name,citation]].fields.[[title,Cited reference]]" ,"value":"REMOVE_ENTRY"},
       							{"key":"categories.[[name,document]].fields.[[title,Year]].sort.default" ,"value":{"order": "asc"}},
-      							{"key":"progress_loader.visible" ,"value":false}
+      							{"key":"progress_loader.visible" ,"value":false},
+                    {"key":"timeout.text" ,"value":""}
       					]
               },
               {
@@ -138,7 +135,8 @@ var browser_conf = {
                 "config_mod" : [
       							{"key":"page_limit_def" ,"value":30},
       							{"key":"categories.[[name,document]].fields.[[title,Cited by]].sort.default" ,"value":{"order": "desc"}},
-      							{"key":"progress_loader.visible" ,"value":false}
+      							{"key":"progress_loader.visible" ,"value":false},
+                    {"key":"timeout.text" ,"value":""}
       					]
               }
             ]
@@ -214,11 +212,7 @@ var browser_conf = {
                           "title":"Loading the list of Documents ...",
                           //"subtitle":"Be patient - this might take several seconds!"
                           //"abort":{"title":"Abort", "href_link":""}
-                        },
-                "timeout":{
-                  "value": 90000,
-                  "link": "/search"
-                }
+                        }
             },
             "oscar": [
               {
@@ -229,7 +223,8 @@ var browser_conf = {
       							{"key":"categories.[[name,document]].fields.[[title,Publisher]]" ,"value":"REMOVE_ENTRY"},
       							{"key":"page_limit_def" ,"value":20},
       							{"key":"categories.[[name,document]].fields.[[title,Year]].sort.default" ,"value":{"order": "desc"}},
-                    {"key":"progress_loader.visible" ,"value":false}
+                    {"key":"progress_loader.visible" ,"value":false},
+                    {"key":"timeout.text" ,"value":""}
       					]
               }
             ]
