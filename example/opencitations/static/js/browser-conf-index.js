@@ -125,6 +125,19 @@ var browser_conf = {
               "citations_in_time":{
               }
             },
+            "oscar_conf": {
+                "progress_loader":{
+                          "visible": false,
+                          "spinner": false,
+                          "title":"Loading the list of Citations and References ...",
+                          //"subtitle":"Be patient - this might take several seconds!"
+                          //"abort":{"title":"Abort", "href_link":""}
+                        },
+                "timeout":{
+                  "value": 90000,
+                  "link": "/search"
+                }
+            },
             "oscar": [
               {
                 "query_text": "citing_doi_iri",
