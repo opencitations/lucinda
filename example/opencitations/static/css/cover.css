@@ -8,3 +8,10 @@ body {
 .site-wrapper-inner {
   vertical-align: middle;
 }
+
+.text-success > a,
+.text-success > a:hover,
+.text-success > a:focus {
+  color: #4b7443;
+  border-bottom-color: #4b7443 ;
+}

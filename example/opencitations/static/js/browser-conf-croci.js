@@ -81,7 +81,7 @@ var browser_conf = {
             },*/
             "header": [
                 {"classes":["40px"]},
-                {"fields": ["citing_doi","FREE-TEXT","cited_doi"], "values":[null," cites ", null], "classes":["header-title text-success","metric-entry text-capitalize mark","header-title text-info"]},
+                {"fields": ["citing_doi","FREE-TEXT","cited_doi"], "values":[null,"  cites  ", null], "classes":["header-title text-success","text-capitalize","header-title text-info"]},
                 //{"fields": ["subtitle"], "classes":["sub-header-title"]},
                 {"classes":["10px"]},
 
@@ -120,10 +120,33 @@ var browser_conf = {
               {"fields": ["FREE-TEXT","isJSelfCitation"], "values":["Is a Journal Self Citation",null], "respects":[[],[not_unknown]], "classes": ["imp-value"]},
               {"fields": ["FREE-TEXT","isASelfCitation"], "values":["Is an Author Self Citation",null], "respects":[[],[not_unknown]], "classes": ["imp-value"]}
             ],
-            "graphics": {
-              "citations_in_time":{
+            "oscar": [
+              {
+                "query_text": "citing_doi_iri",
+                "rule": "citingdoi",
+                "label":"All References",
+                "config_mod" : [
+                    {"key":"page_limit_def" ,"value":30},
+                    //{"key":"categories.[[name,document]].fields.[[title,Cited by]].sort.default" ,"value":{"order": "desc"}},
+                    {"key":"categories.[[name,citation]].fields.[[title,Citing reference]]" ,"value":"REMOVE_ENTRY"},
+                    {"key":"categories.[[name,citation]].fields.[[title,Citing DOI]]" ,"value":"REMOVE_ENTRY"},
+                    {"key":"progress_loader.visible" ,"value":false}
+                ]
+              },
+              {
+                "query_text": "cited_doi_iri",
+                "rule": "citeddoi",
+                "label":"All Citations",
+                "config_mod" : [
+                    {"key":"page_limit_def" ,"value":30},
+                    //{"key":"categories.[[name,citation]].fields.[[title,Cited DOI]]" ,"value":"REMOVE_ENTRY"},
+                    {"key":"categories.[[name,citation]].fields.[[title,Cited reference]]" ,"value":"REMOVE_ENTRY"},
+                    {"key":"categories.[[name,citation]].fields.[[title,Cited DOI]]" ,"value":"REMOVE_ENTRY"},
+                    //{"key":"categories.[[name,document]].fields.[[title,Year]].sort.default" ,"value":{"order": "asc"}},
+                    {"key":"progress_loader.visible" ,"value":false}
+                ]
               }
-            }
+            ]
           },
 
           "ext_sources": [
@@ -163,7 +186,7 @@ var browser_conf = {
                 //The functions which tests whether the call results are valid to be further elaborated and taken in consideration
                 'valid_data':[not_empty,not_undefined]
               }
-          ],
+          ]
     },
 
     //new category

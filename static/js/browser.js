@@ -719,9 +719,10 @@ var browser = (function () {
 					var oscar_key = 'search?text='+query+'&rule='+rule;
 
 					oscar_data[oscar_key] = {};
-					oscar_data[oscar_key]["data"] = search.get_search_data(true, oscar_entry["config_mod"]);
+					//get the OSCAR configuration with the updates indicated
+					oscar_data[oscar_key]["data"] = search.get_search_data(rule = rule, native = true, config_mod = oscar_entry["config_mod"]);
 				}
-				//console.log(JSON.parse(JSON.stringify(oscar_data)));
+				//console.log(JSON.parse(JSON.stringify(oscar_data[oscar_key]["data"])));
 
 				for (var i = 0; i < oscar_content.length; i++) {
 					var oscar_entry = oscar_content[i];
@@ -807,8 +808,12 @@ var browser = (function () {
 				if (li_id != null) {
 					b_htmldom.update_oscar_li(oscar_content,li_id);
 				}
+
+				//in case there is still no results (first time)
 				if (!("results" in oscar_data[oscar_key])) {
-						search.do_sparql_query(oscar_key, null ,[], true, callbk_func_key);
+						// load new oscar data
+						search.change_search_data(oscar_data[oscar_key].data, check_and_update = false);
+						search.do_sparql_query(oscar_key, true ,[], true, callbk_func_key);
 				}else {
 					if (oscar_data[oscar_key]['results']) {
 							//in case the table data has not been yet initialized
@@ -819,7 +824,7 @@ var browser = (function () {
 								// save current state of oscar
 								oscar_data[current_oscar_tab].data = search.get_search_data();
 								// load new oscar data
-								search.change_search_data(oscar_data[oscar_key].data);
+								search.change_search_data(oscar_data[oscar_key].data, check_and_update = true);
 							}
 					}
 				}
@@ -865,7 +870,7 @@ var browser = (function () {
 
 				b_htmldom.loader(false);
 
-				console.log(oscar_data);
+				//console.log(oscar_data);
 				//build oscar menu
 				b_htmldom.build_oscar(resource_res, {"oscar": oscar_content});
 			}
