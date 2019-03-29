@@ -707,7 +707,7 @@ var browser = (function () {
 			if (oscar_content != undefined) {
 				if ('oscar_conf' in contents) {
 					if ('progress_loader' in contents['oscar_conf']) {
-						b_htmldom.loader(true, progress_loader = contents['oscar_conf']['progress_loader']);
+						b_htmldom.loader(true, progress_loader = contents['oscar_conf']['progress_loader'], query_label=null);
 					}
 				}
 				pending_oscar_calls = oscar_content.length;
@@ -872,6 +872,7 @@ var browser = (function () {
 
 				//console.log(oscar_data);
 				//build oscar menu
+				console.log(JSON.parse(JSON.stringify(resource_res)));
 				b_htmldom.build_oscar(resource_res, {"oscar": oscar_content});
 			}
 		}
