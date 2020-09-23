@@ -18,7 +18,7 @@ var browser_conf = {
   "categories":{
     "citation": {
           "rule": "ci\/.*",
-          "query": [`
+          "query": `
             SELECT DISTINCT ?iri ?short_iri ?shorter_coci ?citing_doi ?citing_doi_iri ?cited_doi ?cited_doi_iri ?creationdate ?timespan ?isJSelfCitation ?isASelfCitation
                 WHERE  {
                   GRAPH <https://w3id.org/oc/index/coci/> {
@@ -44,7 +44,7 @@ var browser_conf = {
       		          }
                   }
                 }
-          `],
+          `,
           "links": {
             "short_iri": {"field":"iri","prefix":""}
           },
@@ -193,14 +193,13 @@ var browser_conf = {
     //new category
     "br_stats": {
       "rule":"(10.\\d{4,9}\/[-._;()/:A-Za-z0-9][^\\s]+)",
-      "query": [`
+      "query": `
         SELECT ?doi_iri ?doi
         WHERE  {
             BIND(STR("[[VAR]]") as ?doi) .
             BIND(<http://dx.doi.org/[[VAR]]> as ?doi_iri) .
         }
-        `
-      ],
+        `,
       "links": {
         "doi_iri": {"field":"doi_iri","prefix":""}
       },

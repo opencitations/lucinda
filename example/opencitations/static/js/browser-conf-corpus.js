@@ -21,8 +21,12 @@ var browser_conf = {
   "categories":{
 
     "document": {
+          /*RULE*/
           "rule": "br\/.*",
-          "query": [`
+          "ask_query": `
+              SELECT (IF(count(distinct ?cited) > 1, "true", "false") as ?flag) WHERE {
+                <https://w3id.org/oc/corpus/[[VAR]]> cito:cites ?cited .}`,
+          "query": `
             SELECT DISTINCT ?my_iri ?id_lit ?short_iri ?title ?subtitle ?year ?type ?short_type ?label ?author ?author_browser_iri (COUNT(distinct ?cites) AS ?out_cits) (COUNT(distinct ?cited_by) AS ?in_cits) Where{
               	BIND(<https://w3id.org/oc/corpus/[[VAR]]> as ?my_iri) .
             	  ?my_iri rdf:type ?type .
@@ -56,8 +60,9 @@ var browser_conf = {
                   } GROUP BY ?my_iri ?label ?author ?author_browser_iri ORDER BY DESC(?tot)
               	}
             } GROUP BY ?my_iri ?id_lit ?short_iri ?title ?subtitle ?year ?type ?short_type ?label ?author ?author_browser_iri
-            `
-          ],
+            `,
+
+          /*POST PROCESSING*/
           "links": {
             "author": {"field":"author_browser_iri","prefix":""},
             "short_type": {"field":"type","prefix":""},
@@ -65,7 +70,6 @@ var browser_conf = {
           },
           "group_by": {"keys":["label"], "concats":["author","short_type"]},
           "none_values": {"subtitle": "", "author": "No authors", "title": "Document without title"},
-
           "text_mapping": {
               "short_type":[
                   {"regex": /Expression/g, "value":"Document"},
@@ -73,6 +77,7 @@ var browser_conf = {
               ]
           },
 
+          /*VIEW*/
           "contents": {
             "extra": {
                 "browser_view_switch":{
@@ -148,7 +153,7 @@ var browser_conf = {
 
     "author": {
           "rule": "ra\/.*",
-          "query": [`
+          "query": `
             SELECT ?label ?orcid ?author_iri ?short_iri ?author (COUNT(distinct ?doc) AS ?num_docs) (COUNT(distinct ?cites) AS ?out_cits) (COUNT(distinct ?cited_by) AS ?in_cits_docs) (COUNT(?cited_by) AS ?in_cits_tot) WHERE {
     	         BIND(<https://w3id.org/oc/corpus/[[VAR]]> as ?author_iri) .
                BIND(REPLACE(STR(?author_iri), 'https://w3id.org/oc/corpus', '', 'i') as ?short_iri) .
@@ -168,7 +173,7 @@ var browser_conf = {
     	         }
              } GROUP BY ?label ?orcid ?author_iri ?short_iri ?author
              `
-          ],
+          ,
           "links": {
             //"author": {"field":"author_iri"},
             "title": {"field":"doc"},

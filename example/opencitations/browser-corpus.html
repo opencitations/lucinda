@@ -42,12 +42,15 @@
     <script type="text/javascript" src="static/js/browser-conf-corpus.js"></script>
     <script type="text/javascript" src="../../static/js/browser.js"></script>
     <script>
-
-      var resource_iri = null;
       var myRegexp = /browser-corpus\.html\?browse=(.*)/g;
       var groups = myRegexp.exec(String(window.location.href));
-      if (groups.length > 1) {resource_iri = groups[1];}
-      browser.do_sparql_query(resource_iri);
+      if (groups != null) {
+        browser.do_sparql_query(groups[1]);
+      }
+      else {
+        //use a default example ->  br/1
+        window.location.href = "?browse=br/1";
+      }
     </script>
 
   </body>

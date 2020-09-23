@@ -107,15 +107,6 @@ var browser = (function () {
 			return turtle_prefixes;
 		}
 
-		/*build a string representing the sparql query in a turtle format*/
-		function _build_turtle_query(arr_query){
-			var turtle_prefixes = "";
-			for (var i = 0; i < arr_query.length; i++) {
-				turtle_prefixes = turtle_prefixes +" "+ arr_query[i];
-			}
-			return turtle_prefixes;
-		}
-
 		/*apply heuristics to the original value*/
 		function _apply_heuristics(val,category) {
 			var final_val = val;
@@ -144,38 +135,68 @@ var browser = (function () {
 				if (category == null) {
 					category = _get_category(resource_iri, exclude_list);
 					if (category == -1) {
-						_build_page({}, category);
+						//_build_page({}, category);
+						return -1;
 					}
 				}
 
 				//build the sparql query in turtle format
-				var sparql_query = _build_turtle_prefixes() + _build_turtle_query(browser_conf_json.categories[category].query);
-				//apply heuristics
-				resource_iri = _apply_heuristics(resource_iri, category);
-				sparql_query = sparql_query.replace(/\[\[VAR\]\]/g, resource_iri);
-
-				//use this url to contact the sparql_endpoint triple store
-				var query_contact_tp =  String(browser_conf_json.sparql_endpoint)+"?query="+ encodeURIComponent(sparql_query) +"&format=json";
+				function build_sparql_query(a_query){
+					var sparql_query = _build_turtle_prefixes() + a_query;
+					//apply heuristics
+					resource_iri = _apply_heuristics(resource_iri, category);
+					return sparql_query.replace(/\[\[VAR\]\]/g, resource_iri);
+				}
 
 				//call the sparql end point and retrieve results in json format
-				$.ajax({
-			        dataType: "json",
-			        url: query_contact_tp,
-							type: 'GET',
-	    				success: function( res_data ) {
-									if (res_data.results.bindings.length == 0) {
-										//try look for another category
-										var new_exclude_list = exclude_list;
-										new_exclude_list.push(category);
-										do_sparql_query(resource_iri, given_category= given_category, exclude_list = new_exclude_list, call_fun = call_fun);
-									}else {
-											if (call_fun != null) {
-												Reflect.apply(call_fun,undefined,[res_data,category]);
-											}
-											_build_page(res_data, category);
-									}
-	    				}
-			   });
+				function query_the_endpoint() {
+
+					//use this url to contact the sparql_endpoint triple store
+					var res_query = browser_conf_json.categories[category].query;
+					var query_contact_tp =  String(browser_conf_json.sparql_endpoint)+"?query="+ encodeURIComponent(build_sparql_query(res_query)) +"&format=json";
+					$.ajax({
+				        dataType: "json",
+				        url: query_contact_tp,
+								type: 'GET',
+		    				success: function( res_data ) {
+										if (res_data.results.bindings.length == 0) {
+											//try look for another category
+											var new_exclude_list = exclude_list;
+											new_exclude_list.push(category);
+											do_sparql_query(resource_iri, given_category= given_category, exclude_list = new_exclude_list, call_fun = call_fun);
+										}else {
+												if (call_fun != null) {
+													Reflect.apply(call_fun,undefined,[res_data,category]);
+												}
+												_build_page(res_data, category);
+										}
+		    				}
+				   });
+				 }
+
+				//If we have an ask rule we need to first apply that
+ 				var ask_query = b_util.is_in_and_defined(browser_conf_json.categories[category],"ask_query");
+				if (ask_query != -1) {
+						var query_ask_tp =  String(browser_conf_json.sparql_endpoint)+"?query="+ encodeURIComponent(build_sparql_query(ask_query)) +"&format=json";
+						$.ajax({
+					        dataType: "json",
+					        url: query_ask_tp,
+									type: 'GET',
+			    				success: function( res_flag ) {
+										console.log("Ask result is ->", res_flag);
+										if ((res_flag.results.bindings.length > 0) && (res_flag.results.bindings[0]["flag"]["value"] == "true")){
+												query_the_endpoint();
+										}else {
+											var new_exclude_list = exclude_list;
+											new_exclude_list.push(category);
+											do_sparql_query(resource_iri, given_category= given_category, exclude_list = new_exclude_list, call_fun = call_fun);
+										}
+			    				}
+					   });
+	 			}else {
+					query_the_endpoint();
+	 			}
+
 			 }
 		}
 
@@ -190,7 +211,7 @@ var browser = (function () {
 					case "browser_view_switch":
 						var flag = true;
 						for (var i = 0; i < extra_comp.values.length; i++) {
-							var sparql_query = _build_turtle_query(extra_comp.query[i]);
+							var sparql_query = extra_comp.query[i];
 							sparql_query = sparql_query.replace(/\[\[VAR\]\]/g, data_obj[extra_comp.values[i]].value);
 							//console.log(sparql_query);
 							var query_contact_tp =  String(browser_conf_json.sparql_endpoint)+"?query="+ encodeURIComponent(sparql_query) +"&format=json";

@@ -19,7 +19,7 @@ var browser_conf = {
   "categories":{
     "coci_citation": {
           "rule": "coci\/ci\/.*",
-          "query": [`
+          "query": `
             SELECT DISTINCT ?iri ?short_iri ?citing_doi ?citing_doi_iri ?cited_doi ?cited_doi_iri ?creationdate ?timespan ?isJSelfCitation ?isASelfCitation
                 WHERE  {
                   GRAPH <https://w3id.org/oc/index/coci/> {
@@ -45,7 +45,7 @@ var browser_conf = {
       		          }
                   }
                 }
-          `],
+          `,
           "links": {
             "short_iri": {"field":"iri","prefix":""}
           },
@@ -209,7 +209,7 @@ var browser_conf = {
     },
     "croci_citation": {
           "rule": "croci\/ci\/.*",
-          "query": [`
+          "query": `
             SELECT DISTINCT ?iri ?short_iri ?citing_doi ?citing_doi_iri ?cited_doi ?cited_doi_iri ?creationdate ?timespan ?isJSelfCitation ?isASelfCitation
                 WHERE  {
                   GRAPH <https://w3id.org/oc/index/croci/> {
@@ -235,7 +235,7 @@ var browser_conf = {
                           }
                   }
                 }
-          `],
+          `,
           "links": {
             "short_iri": {"field":"iri","prefix":""}
           },
