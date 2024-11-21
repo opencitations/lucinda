@@ -1,0 +1,26 @@
+#url /metadata/{id}
+#title Any BR resource
+#endpoint http://localhost:3333/blazegraph/namespace/kb/sparql
+#method post
+#preprocess generate_id_search(id)
+#postprocess create_metadata_output()
+#sparql PREFIX datacite: <http://purl.org/spar/datacite/>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX literal: <http://www.essepuntato.it/2010/06/literalreification/>
+PREFIX prism: <http://prismstandard.org/namespaces/basic/2.0/>
+SELECT ?id ?title ?pub_date {
+    ?identifier literal:hasLiteralValue "10.1162/qss_a_00023".
+    ?br datacite:hasIdentifier ?identifier;
+       dcterms:title ?title;
+         prism:publicationDate ?publicationDate.
+       BIND(STR(?publicationDate) AS ?pub_date)
+    BIND((CONCAT("doi:", "10.1162/qss_a_00023")) AS ?id)
+}
+
+#field br_id
+#value id
+#view label
+
+#field br_title
+#value title
+#view label
