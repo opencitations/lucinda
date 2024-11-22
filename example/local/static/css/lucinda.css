@@ -1,8 +1,35 @@
-/*Views*/
-#coci_cits_in_time{
-  width: 450px;
+:root {
+  --main-bg-color: #F4F3F3;
+  --secondary-bg-color: #DFDFDF;
+  --main-text-color: black;
+  --link-text-color: #37AFE1;
+
+  /*
+  --main-bg-color-night: #1A2F4B;
+  --color-night-p2: #28475C;
+  --color-night-p3: #2F8886;
+  --color-night-p4: #84C69B;
+  */
 }
 
-#self_citation{
-  width: 450px;
+body{
+  margin: 0px;
+  background-color: var(--main-bg-color);
+}
+
+#__lucinda__ {
+  color: var(--color-main-text);
+  font-family: sans-serif;
+  font-weight: lighter;
+  min-height: 500px;
+  padding: 50px;
+}
+
+#__lucinda__ a{
+  text-decoration: none;
+  color: var(--link-text-color);
+}
+
+#__lucinda__ a:hover {
+  text-decoration: underline;
 }

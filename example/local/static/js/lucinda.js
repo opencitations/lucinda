@@ -1,4 +1,4 @@
-class Util {
+class Lucinda_util {
       static parse_hf_content(content) {
 
         const lines = content.split('\n');
@@ -71,21 +71,54 @@ class Util {
               return key in values ? values[key] : match; // Replace or keep the original placeholder if not found
           });
       }
+
+      static replace_lucinda_placeholders(index_placeholders,content) {
+        var converted_content = content;
+        for (const placeholder in index_placeholders) {
+          converted_content = converted_content.replaceAll(
+            placeholder,
+            index_placeholders[placeholder]
+          )
+        }
+        return converted_content;
+      }
+
+      static extract_lucinda_placeholders(text) {
+          const regex = /\[\[Lucinda:(\w+)\((.*?)\)\]\]/g;
+          var matches = {};
+          let match;
+          while ((match = regex.exec(text)) !== null) {
+            matches[match[0]] = {
+              type: match[1],
+              value: match[2].split(",").map(arg => arg.trim())
+            };
+          }
+          return matches;
+      }
 }
 
 
-class Lucinda_dom {
+class Lucinda_view {
 
-  static list(data,field){
-
+  constructor(data) {
+    this.data = data;
   }
 
-  static label(id,value){
-    var html_value = [];
-    for (const _f in value) {
-      html_value.push(value[_f]);
+  /*
+  each function takes only one @param:
+  + <value>: a list of elementt
+  */
+
+  text(args){
+    try {
+      var text = [];
+      for (let i = 0; i < args.length; i++) {
+        text.push(this.data[args[i]]);
+      }
+      return text.join(", ");
+    } catch (e) {
+      return "";
     }
-    return "<label id="+id+">"+html_value.join(", ")+"</label>";
   }
 
 }
@@ -123,7 +156,7 @@ class Lucinda {
           .then(response => response.text())
           .then(hf_content => {
               if (hf_content) {
-                  templates[k_template] = Util.parse_hf_content(hf_content);
+                  templates[k_template] = Lucinda_util.parse_hf_content(hf_content);
               }
               Lucinda.run( c+1, templates );
           })
@@ -132,7 +165,7 @@ class Lucinda {
       function _init_current_resource(_templates) {
           const href_path = window.location.href;
           for (const _k in _templates) {
-            const url_params = Util.extract_url_params( href_path, _templates[_k]["url"] );
+            const url_params = Lucinda_util.extract_url_params( href_path, _templates[_k]["url"] );
             if (url_params != null) {
               Lucinda.current_resource = {
                 "template": _k,
@@ -149,14 +182,13 @@ class Lucinda {
       //       const script = document.createElement('script');
       //       script.src = Lucinda.conf.addon;
       //       script.async = true;
-      //       const lucinda_dom = document.getElementById('__lucinda__');
-      //       if (lucinda_dom) {
-      //           lucinda_dom.appendChild(script);
+      //       const Lucinda_view = document.getElementById('__lucinda__');
+      //       if (Lucinda_view) {
+      //           Lucinda_view.appendChild(script);
       //       }
       //   }
       // }
     }
-
 
     static query_endpoint() {
 
@@ -187,7 +219,6 @@ class Lucinda {
 
 
       if (Lucinda.conf.local_test) {
-        // +++ POSTPROCESS OPERATION
         const data = [
             {
                 "id": "doi:10.1007/978-1-4020-9632-7 isbn:9781402096327 isbn:9789048127108 openalex:W4249829199 omid:br/0612058700",
@@ -195,14 +226,15 @@ class Lucinda {
                 "pub_date": "2009"
             }
         ]
-        Lucinda.build_success_html_page(data[0]);
+        var postprocess_data = _postprocess(data);
+        Lucinda.build_success_html_page(postprocess_data);
 
       }else {
         fetch(endpoint_call,args)
           .then(response => response.json())
           .then(data => {
-            console.log(data);
             // +++ POSTPROCESS OPERATION
+            _postprocess(data);
             Lucinda.build_success_html_page(data);
           })
           .catch(error => {
@@ -222,12 +254,12 @@ class Lucinda {
         const f_call = hfconf["preprocess"];
         const match = f_call.match(/^(\w+)\((.*?)\)$/);
         if (!match) {
-          throw new Error(`Invalid function call syntax: ${f_call}`);
+          throw new Error(`Invalid function call syntax in HF file: ${f_call}`);
         }
 
         const [_, functionName, args] = match;
         if (typeof window[functionName] !== 'function') {
-            throw new Error(`Function not found: ${functionName}`);
+            throw new Error(`Preprocess function not found: ${functionName}`);
         }
 
         // Process the arguments using `param` for mapping
@@ -248,10 +280,30 @@ class Lucinda {
         return Lucinda.current_resource.param;
       }
 
+      function _postprocess(data) {
+        const hfconf = Lucinda.current_resource.hfconf;
+        if (!("postprocess" in hfconf)) {
+          return false;
+        }
+
+        const f_call = hfconf["postprocess"];
+        const match = f_call.match(/^(\w+)\((.*?)\)$/);
+        if (!match) {
+          throw new Error(`Invalid function call syntax in HF file: ${f_call}`);
+        }
+
+        const [_, functionName, args] = match;
+        if (typeof window[functionName] !== 'function') {
+            throw new Error(`Postprocess function not found: ${functionName}`);
+        }
+
+        return window[functionName](data);
+      }
+
       function _build_sparql_query() {
 
         if (Lucinda.current_resource.hfconf.sparql != undefined) {
-          return Util.replace_placeholders(
+          return Lucinda_util.replace_placeholders(
             Lucinda.current_resource.hfconf.sparql,
             Lucinda.current_resource.param)
         }
@@ -262,44 +314,27 @@ class Lucinda {
 
     static build_success_html_page(data){
       console.log("Building HTML success page!");
-      console.log(data);
-      const fields = Lucinda.current_resource.hfconf.fields;
 
-      var html_index  = {};
-      if (fields) {
-        for (const _f in fields) {
-          const field_name = _f;
-          const field_value = fields[_f]["value"];
-          const view_fun = fields[_f]["view"];
-
-          //build value
-          var value = {};
-          for (let i = 0; i < field_value.length; i++) {
-            var _val_part = null;
-            if (field_value[i] in data) {
-              _val_part = data[field_value[i]];
+      const lv = new Lucinda_view(data);
+      const template = Lucinda.current_resource.template;
+      fetch(Lucinda.conf.template_base+template+'.html?t='+Date.now())
+          .then(response => response.text())
+          .then(html_content => {
+            const fields = Lucinda_util.extract_lucinda_placeholders(html_content);
+            // apply Lucinda view
+            var html_index  = {};
+            if (fields) {
+              for (const placeholder in fields) {
+                const type = fields[placeholder]["type"];
+                const value = fields[placeholder]["value"];
+                html_index[placeholder] = lv[type](value);
+              }
             }
-            value[field_value[i]] = _val_part;
-          }
-
-          // build html part
-          html_index[_f] = Lucinda_dom[view_fun](_f, value);
-        }
-
-        /*
-          Create the template
-        */
-        const template = Lucinda.current_resource.template;
-        fetch(Lucinda.conf.template_base+template+'.html')
-            .then(response => response.text())
-            .then(html_content => {
-              document.getElementById('__lucinda__').innerHTML = Util.replace_placeholders(html_content,html_index);
-            })
-            .catch(error => {console.error('Error loading the HTML file:', error);});
-        return true;
-
-      }
-
+            // ---
+            const html_body = Lucinda_util.replace_lucinda_placeholders(html_index, html_content);
+            document.getElementById('__lucinda__').innerHTML = html_body;
+          })
+          .catch(error => {console.error('Error loading the HTML file:', error);});
     }
 
     static build_error_html_page(){

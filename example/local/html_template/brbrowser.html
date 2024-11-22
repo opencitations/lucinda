@@ -1,10 +1,20 @@
 <html>
-  <head></head>
+  <head>
+    <style>
+        h1 {
+            text-align: left;
+        }
+    </style>
+  </head>
   <body>
     <h1> This is a BR </h1>
 
-    <p>The ID is = [[br_id]]</p>
-    <p>The Title is = [[br_title]]</p>
+    <p>ID: <a href="/this/is/a/link/to/[[Lucinda:text(id)]]">[[Lucinda:text(id)]]</a></p>
+    <p>Title: [[Lucinda:text(title)]]</p>
+
+    <p>Title with custom Lucinda_view function: [[Lucinda:capitalizetext(title)]]</p>
+
+    <p>Also I have adde a new value using a postprocess function: <b>[[Lucinda:text(postprocess_value)]]</b> <p>
 
   </body>
 </html>
