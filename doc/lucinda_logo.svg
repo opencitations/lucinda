@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="178px" height="128px" viewBox="0 0 178 128" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>lucinda_logo-v2.0</title>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="lucinda_logo-v2.0">
+            <g id="UCINDA" transform="translate(24.255, 9)" fill="#3B82C2" fill-rule="nonzero" font-family="PTSans-NarrowBold, PT Sans Narrow" font-size="65" font-style="condensed" font-weight="bold">
+                <text id="ucinda">
+                    <tspan x="0" y="58">ucinda</tspan>
+                </text>
+            </g>
+            <g id="L" fill="#3B82C2" fill-rule="nonzero" font-family="PTSans-NarrowBold, PT Sans Narrow" font-size="110" font-style="condensed" font-weight="bold">
+                <text>
+                    <tspan x="0" y="99">L</tspan>
+                </text>
+            </g>
+            <g id="click" transform="translate(56, 75)">
+                <g id="Group-2" fill="#A57EC6" fill-rule="nonzero" stroke="#A57EC6" stroke-dasharray="1,1" stroke-linecap="round" stroke-width="3.5">
+                    <path d="M9.25,11.9423077 L9.25,11.9423077 C14.4967051,11.9423077 18.75,12.2608743 18.75,12.6538462 L18.75,29.7307692 C18.75,30.1237411 14.4967051,30.4423077 9.25,30.4423077 L9.25,30.4423077 C4.00329488,30.4423077 -0.25,30.1237411 -0.25,29.7307692 L-0.25,12.6538462 C-0.25,12.2608743 4.00329488,11.9423077 9.25,11.9423077 Z" id="Rectangle" transform="translate(9.25, 21.1923) rotate(90) translate(-9.25, -21.1923)"></path>
+                    <path d="M21.1428571,0.25 L21.1428571,0.25 C26.3895623,0.25 30.6428571,0.56856662 30.6428571,0.961538462 L30.6428571,18.0384615 C30.6428571,18.4314334 26.3895623,18.75 21.1428571,18.75 L21.1428571,18.75 C15.896152,18.75 11.6428571,18.4314334 11.6428571,18.0384615 L11.6428571,0.961538462 C11.6428571,0.56856662 15.896152,0.25 21.1428571,0.25 Z" id="Rectangle" transform="translate(21.1429, 9.5) rotate(90) translate(-21.1429, -9.5)"></path>
+                    <path d="M27.75,19.25 L27.75,19.25 C32.9967051,19.25 37.25,19.5685666 37.25,19.9615385 L37.25,37.0384615 C37.25,37.4314334 32.9967051,37.75 27.75,37.75 L27.75,37.75 C22.5032949,37.75 18.25,37.4314334 18.25,37.0384615 L18.25,19.9615385 C18.25,19.5685666 22.5032949,19.25 27.75,19.25 Z" id="Rectangle" transform="translate(27.75, 28.5) rotate(90) translate(-27.75, -28.5)"></path>
+                </g>
+                <g id="Group" transform="translate(55.4694, 21.3075) rotate(-65) translate(-55.4694, -21.3075)translate(46.1418, 6.6778)">
+                    <path d="M10.2388649,2.01568172 L18.0170156,19.2215563 C18.2445171,19.7248073 18.020978,20.3171992 17.517727,20.5447006 C17.3882825,20.6032178 17.247856,20.6334842 17.1057992,20.6334842 L1.54949774,20.6334842 C0.997212993,20.6334842 0.549497743,20.1857689 0.549497743,19.6334842 C0.549497743,19.4914274 0.579764129,19.3510008 0.63828128,19.2215563 L8.416432,2.01568172 C8.64393347,1.51243076 9.23632536,1.28889164 9.73957632,1.51639311 C9.96118173,1.61657286 10.1386852,1.7940763 10.2388649,2.01568172 Z" id="Triangle" fill="#A57EC6" fill-rule="nonzero"></path>
+                    <line x1="8.81099835" y1="24.616757" x2="8.81099835" y2="29.259291" id="Line" stroke="#A57EC6" stroke-width="4" stroke-linecap="round"></line>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
