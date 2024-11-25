@@ -15,7 +15,7 @@ Lucinda is a general RDF-resource browser which could be configured to work with
   - In case you have a custom JS addon file, import it right after the Lucinda JS previously imported:
   ```
   <script type="text/javascript" src="path/to/lucinda.js"></script>
-  <script type="text/javascript" src="../static/js/my_lucionda_addon.js"></script>
+  <script type="text/javascript" src="path/to/my_lucionda_addon.js"></script>
   ```
 
 - **2.** Define your resource template(s), each template is defined by:
