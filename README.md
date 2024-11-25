@@ -1,32 +1,38 @@
-<img src="doc/lucinda_logo-v2.0.png" alt="drawing" width="350"/>
+<img src="doc/lucinda_logo.svg" alt="drawing" width="350"/>
 
-### The OpenCitations RDF Resource Browser
-#### *"LUCINDA and [OSCAR](https://github.com/opencitations/oscar) work better together"*
-Lucinda is a general RDF-resource browser which could be configured to work with any triplestore providing a SPARQL-endpoint address. LUCINDA can also integrate in it [OSCAR](https://github.com/opencitations/oscar), The OpenCitations RDF Search Application.  
-In this repository you can find few examples of Lucinda usage. Currently we have tested Lucinda with two different projects: [OpenCitations](http://opencitations.net/), and [Wikidata](http://wikidata.org/). For each one of these projects we have its corresponding .html main entry, try the Wikidata example, presented at [Wikicite2018](https://meta.wikimedia.org/wiki/WikiCite_2018), at [example/wikidata/browser.html](https://opencitations.github.io/lucinda/example/wikidata/browser.html?browse=Q30536251) .
+### The OpenCitations RDF Resource Browser (v3.0)
+Lucinda is a general RDF-resource browser which could be configured to work with any triplestore providing a SPARQL-endpoint address. In this repository you can find few [examples](examples/) of Lucinda usage. Lucinda was first presented at [Wikicite2018](https://meta.wikimedia.org/wiki/WikiCite_2018).
 
 # LUCINDA Configuration
 
-**0) LUCINDA Needs bootstrap (currently LUCINDA uses bootstrap-3.4.1):**   
-```<link href="../../static/css/bootstrap.min.css" rel="stylesheet" />```  
-```<script src="path/to/bootstrap.min.js" />```
-        
-        
-**1) Insert in your HTML page the following block:** 
+- **1.** In your HTML browsing page, do the following things:
+  - Insert in your HTML page the following block:
+  ```<div id="__lucinda__"></div>```
+  - Import Lucinda CSS file in your `<head>`:
+  ```<link href="path/to/lucinda.css" rel="stylesheet">```
+  - Import Lucinda JS at the end of your HTML file (typically after the `<footer>`):
+  ```<script type="text/javascript" src="path/to/lucinda.js"></script>```
+  - In case you have a custom JS addon file, import it right after the Lucinda JS previously imported:
+  ```
+  <script type="text/javascript" src="path/to/lucinda.js"></script>
+  <script type="text/javascript" src="path/to/my_lucionda_addon.js"></script>
+  ```
 
-```<div class="__lucinda__" data-content="..."></div></div>``` 
-* **[[data-content]]**= Combine: *"header"* | *"details"* | *"switch"* | *"metrics"*.  
-e.g.  ```view_op="header details metrics"```
+- **2.** Define your resource template(s), each template is defined by:
+  - HF file, have a look at the guidelines on how to correctly define it.
+  - HTML file, have a look at the guidelines on how to correctly define it.
 
-
-**2) Include your configuration file, and right after that include the 'browse.js' script in your HTML page, like this:**
-
-```<script type="text/javascript" src="path/to/your/conf.js"></script>```  
-```<script type="text/javascript" src="path/to/browse.js""></script>```
-
-
-**3) To run LUCINDA call its main method:**
-
-```browse.do_sparql_query([[QUERY]])```
-* **[[QUERY]]**: in case an empty string is given LUCINDA will not build the interface. The other option is giving a string corresponding a query as URL address. e.g. *"?browse=br/1"*
-
+- **3.** Run Lucinda:
+  - From your browsing page (of step **(1)**), add `<script>` block right after the imported JS modules and set the default configurations of Lucinda (have a look at the guidelines on how to correctly do this):
+  ```
+  Lucinda.init({
+      url_base: "/browser",
+      templates: [
+        "brbrowser"
+      ]
+  });
+  ```
+  - Run lucinda right after:
+  ```
+  Lucinda.run();
+  ```

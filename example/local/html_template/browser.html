@@ -1,0 +1,47 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="../static/css/lucinda.css" rel="stylesheet">
+    <!-- Custom styles for this template -->
+    <link href="../static/css/browser.css" rel="stylesheet">
+
+  </head>
+
+
+  <body>
+
+    <header>
+      <div class="logo">
+        <img src="../static/img/lucinda_logo.svg" alt="Lucinda Logo"/>
+        <!--<h1>Lucinda v2.0</h1>-->
+      </div>
+    </header>
+
+    <div id="__lucinda__"></div>
+
+
+    <footer>
+      <div class="footer-content">
+        <p>2024 Lucinda</p>
+      </div>
+    </footer>
+
+
+    <script type="text/javascript" src="../static/js/lucinda.js"></script>
+    <script type="text/javascript" src="../static/js/localbrowser.js"></script>
+    <script>
+      Lucinda.init({
+          url_base: "/browser",
+          templates: [
+            "brbrowser"
+          ],
+          local_test: true
+      });
+      Lucinda.run();
+    </script>
+
+  </body>
+</html>
