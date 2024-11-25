@@ -1,9 +1,10 @@
 
 /* Header Styling */
 header {
-  background-color: rgba(14, 131, 136, 1);
+  /*background-color: lightgray;*/
+  background: linear-gradient(to top, lightgray, lightgray);
   color: white;
-  padding: 1em;
+  padding: 0em;
   font-family: sans-serif;
 }
 
@@ -13,8 +14,8 @@ header .logo {
 }
 
 header .logo img {
-  max-height: 50px;
-  margin-right: 1em;
+  height: 150px;
+  margin-left: 2em;
 }
 
 header nav {

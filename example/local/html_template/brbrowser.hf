@@ -16,3 +16,4 @@ SELECT ?id ?title ?pub_date {
        BIND(STR(?publicationDate) AS ?pub_date)
     BIND((CONCAT("doi:", "10.1162/qss_a_00023")) AS ?id)
 }
+#extdata addinfo:get_additional_info()

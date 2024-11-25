@@ -4,6 +4,7 @@ class Lucinda_util {
         const lines = content.split('\n');
         const result = {
             fields: [],
+            extdata: {}
         };
         var is_query = false;
         var current_field = null;
@@ -20,6 +21,12 @@ class Lucinda_util {
                 if (key.startsWith('field')) {
                   current_field = value;
                   result.fields[current_field] = {};
+                  return;
+                }
+
+                if (key.startsWith('extdata')) {
+                  const parts = value.split(":").map(arg => arg.trim());
+                  result.extdata[parts[0]] = parts[1];
                   return;
                 }
 
@@ -104,12 +111,24 @@ class Lucinda_view {
     this.data = data;
   }
 
-  /*
-  each function takes only one @param:
-  + <value>: a list of elementt
+  /*returns true if <arg> is already in <this.data>*/
+  is_ready(arg){
+    return arg in this.data;
+  }
+
+  /*sets a new <k> in <this.data> with a corresponding value <v>*/
+  set_new_data_entry(k,v){
+    this.data[k] = v;
+  }
+
+
+  /** VIEW FUNCTIONS
+  * each function takes only one @param:
+  * <args>: a list of keys that are inside <this.data>
   */
 
-  text(args){
+  /*Returns just the text*/
+  text(...args){
     try {
       var text = [];
       for (let i = 0; i < args.length; i++) {
@@ -134,6 +153,7 @@ class Lucinda {
       local_test: false
     }
     static current_resource = null;
+    static lv = null;
 
     static init(_conf) {
       for (const _k in _conf) {
@@ -177,17 +197,6 @@ class Lucinda {
           }
           return null;
       }
-      // function _include_addon() {
-      //   if (Lucinda.conf.addon) {
-      //       const script = document.createElement('script');
-      //       script.src = Lucinda.conf.addon;
-      //       script.async = true;
-      //       const Lucinda_view = document.getElementById('__lucinda__');
-      //       if (Lucinda_view) {
-      //           Lucinda_view.appendChild(script);
-      //       }
-      //   }
-      // }
     }
 
     static query_endpoint() {
@@ -315,7 +324,7 @@ class Lucinda {
     static build_success_html_page(data){
       console.log("Building HTML success page!");
 
-      const lv = new Lucinda_view(data);
+      Lucinda.lv = new Lucinda_view(data);
       const template = Lucinda.current_resource.template;
       fetch(Lucinda.conf.template_base+template+'.html?t='+Date.now())
           .then(response => response.text())
@@ -323,21 +332,67 @@ class Lucinda {
             const fields = Lucinda_util.extract_lucinda_placeholders(html_content);
             // apply Lucinda view
             var html_index  = {};
+            var async_extdata = {};
             if (fields) {
               for (const placeholder in fields) {
                 const type = fields[placeholder]["type"];
                 const value = fields[placeholder]["value"];
-                html_index[placeholder] = lv[type](value);
+                if (Lucinda.lv.is_ready(value)) {
+                  html_index[placeholder] = Lucinda.lv[type](value);
+                }else {
+                  html_index[placeholder] = "<span id='lucinda_extdata"+value+"' class='loading-dots'><span>.</span><span>.</span><span>.</span></span>";
+                  async_extdata[value] = {"placeholder":placeholder,"type":type};
+                }
               }
             }
             // ---
             const html_body = Lucinda_util.replace_lucinda_placeholders(html_index, html_content);
             document.getElementById('__lucinda__').innerHTML = html_body;
+            Lucinda.run_extdata( data,async_extdata );
           })
           .catch(error => {console.error('Error loading the HTML file:', error);});
     }
 
+    static build_async_html(...args){
+      const value = args[0];
+      const id = args[1];
+      const type = args[2];
+      const palceholder = args[3];
+      Lucinda.lv.set_new_data_entry(id,value);
+      const view = Lucinda.lv[type](id);
+      const loading_placeholder = document.getElementById('lucinda_extdata'+id);
+      loading_placeholder.parentNode.replaceChild( document.createTextNode(view), loading_placeholder );
+    }
+
+    static run_extdata(data,async_extdata){
+      const hfconf = Lucinda.current_resource.hfconf;
+      if ("extdata" in hfconf) {
+        for (const data_id in hfconf["extdata"]) {
+          if (data_id in async_extdata) {
+            const placeholder = async_extdata[data_id]["placeholder"];
+            const type = async_extdata[data_id]["type"];
+            const data_extfun = _extfun(hfconf["extdata"][data_id]);
+            window[data_extfun](data, Lucinda.build_async_html, data_id, type, placeholder );
+          }
+        }
+      }
+
+      function _extfun(data_extfun) {
+        const match = data_extfun.match(/^(\w+)\((.*?)\)$/);
+        if (!match) {
+          throw new Error(`Invalid external function call syntax: ${data_extfun}`);
+        }
+
+        const [_, functionName, args] = match;
+        if (typeof window[functionName] !== 'function') {
+            throw new Error(`Postprocess function not found: ${functionName}`);
+        }
+        return functionName;
+      }
+    }
+
     static build_error_html_page(){
       console.log("Building HTML error page!");
+      document.getElementById('__lucinda__').innerHTML = "<html><head></head><body><h1>Error while loading the desired resource!</h1></body></html>";
     }
 }
