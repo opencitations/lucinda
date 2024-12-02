@@ -1,57 +1,53 @@
 class Lucinda_util {
+
       static parse_hf_content(content) {
 
-        const lines = content.split('\n');
-        const result = {
-            fields: [],
-            extdata: {}
-        };
-        var is_query = false;
-        var current_field = null;
+        const lines = content.split('\n'); // Split content into lines
+        const parsedData = [];
+        let currentBlock = null;
 
-        lines.forEach((line) => {
-            line = line.trim();
+        for (let line of lines) {
+            line = line.trim(); // Remove extra whitespace
 
-            // Metadata lines starting with #
-            if (line.startsWith('#')) {
-                is_query = false;
-                const [key, ...valueParts] = line.slice(1).split(' ');
-                var value = valueParts.join(' ').trim();
+            if (!line || line.startsWith('#') === false) {
+                continue; // Skip empty lines or non-comment lines
+            }
 
-                if (key.startsWith('field')) {
-                  current_field = value;
-                  result.fields[current_field] = {};
-                  return;
+            if (line.startsWith('#id')) {
+                // New block starts
+                if (currentBlock) {
+                    parsedData.push(currentBlock); // Save the previous block
                 }
-
-                if (key.startsWith('extdata')) {
-                  const parts = value.split(":").map(arg => arg.trim());
-                  result.extdata[parts[0]] = parts[1];
-                  return;
+                currentBlock = { id: line.replace('#id', '').trim() }; // Start a new block
+            } else if (currentBlock) {
+                if (line.startsWith('#sparql')) {
+                    // Concatenate sparql lines until empty line or new # key
+                    currentBlock.sparql = currentBlock.sparql || '';
+                    currentBlock.sparql += line.replace('#sparql', '').trim() + '\n';
+                } else {
+                    // Generic key-value pair
+                    const [key, ...valueParts] = line.slice(1).split(' '); // Remove '#' and split
+                    const value = valueParts.join(' ').trim();
+                    currentBlock[key] = value;
                 }
+            }
+        }
 
-                if (key.startsWith('sparql')) {
-                  is_query = true;
-                  result["sparql"] = value;
-                }
+        // Push the last block if it exists
+        if (currentBlock) {
+            parsedData.push(currentBlock);
+        }
 
-                if (current_field != null) {
-                  if (key == "value") {
-                    value = value.split(",").map(arg => arg.trim());
-                  }
-                  result.fields[current_field][key] = value;
-                }else {
-                  result[key] = value;
-                }
-
-            }else {
-              if (is_query) {
-                result["sparql"] += "\n" + line;
-              }
+        // Trim any excess newline characters from sparql blocks
+        parsedData.forEach(block => {
+            if (block.sparql) {
+                block.sparql = block.sparql.trim();
             }
         });
-        return result;
-      }
+
+        return parsedData;
+    };
+
 
       static extract_url_params(path, pattern) {
           const regex = new RegExp( pattern.replace(/{([^}]+)}/g, '(.*)') );
@@ -146,13 +142,12 @@ class Lucinda_view {
 class Lucinda {
     static conf = {
       url_base: "/",
-      template_base: "",
       templates: [],
       addon: null,
       html_error: null,
       local_test: false
     }
-    static current_resource = null;
+    static current_resource = [];
     static lv = null;
 
     static init(_conf) {
@@ -165,14 +160,15 @@ class Lucinda {
 
     static run( c = 0, templates = {} ) {
       if (c >= Lucinda.conf.templates.length) {
-        _init_current_resource(templates);
-        //_include_addon();
+        const potential_templates = _get_potential_templates(templates);
+        console.log(potential_templates);
+        Lucinda.current_resource = _set_template(potential_templates);
         Lucinda.query_endpoint();
         return true;
       }
 
       const k_template = Lucinda.conf.templates[c];
-      fetch(Lucinda.conf.template_base + k_template + '.hf')
+      fetch(Lucinda.conf.url_base + k_template + '.hf')
           .then(response => response.text())
           .then(hf_content => {
               if (hf_content) {
@@ -182,20 +178,60 @@ class Lucinda {
           })
           .catch(error => {console.error('Error loading the HF file:', error);});
 
-      function _init_current_resource(_templates) {
+      function _get_potential_templates(_templates) {
+          var potential_templates = [];
           const href_path = window.location.href;
           for (const _k in _templates) {
-            const url_params = Lucinda_util.extract_url_params( href_path, _templates[_k]["url"] );
+            // the main block is always the first one
+            const main_block = _templates[_k][0];
+            const url_params = Lucinda_util.extract_url_params( href_path, main_block["url"] );
             if (url_params != null) {
-              Lucinda.current_resource = {
+              potential_templates.push({
                 "template": _k,
                 "param": url_params,
                 "hfconf": _templates[_k]
-              };
-              return Lucinda.current_resource;
+              });
             }
           }
+          if (potential_templates.length > 0) {
+            // returned sorted according to template name and the main block definition
+
+            potential_templates = potential_templates.sort((a, b) => {
+                // Check if both or neither have the "query" key
+                const hasQueryA = 'sparql' in a.hfconf[0];
+                const hasQueryB = 'sparql' in b.hfconf[0];
+                if (hasQueryA && !hasQueryB) return -1;
+                if (!hasQueryA && hasQueryB) return 1;
+                return a.template.localeCompare(b.template);
+            });
+          }
+          return potential_templates;
+      }
+      function _set_template(potential_templates, c=0) {
+
+        if (potential_templates.length == 0) {
           return null;
+        }
+
+        const pa = potential_templates[i];
+        if (c == potential_templates.length - 1) {
+          return pa;
+        }
+
+        if (c < potential_templates.length - 1) {
+          if (!("sparql" in pa.hfconf[0])) {
+            return pa;
+          }else {
+            /*ASK Sparql*/
+            // const endpoint_call = pa.hfconf[0]["endpoint"]+pa.hfconf[0]["sparql"];
+            // fetch(endpoint_call)
+            //   .then(response => response.json())
+            //   .then(data => {
+            //     /*if true stop and return pa*/
+            //     /*else: _set_template(potential_templates, c + 1)*/
+            //   })
+          }
+        }
       }
     }
 
@@ -326,7 +362,7 @@ class Lucinda {
 
       Lucinda.lv = new Lucinda_view(data);
       const template = Lucinda.current_resource.template;
-      fetch(Lucinda.conf.template_base+template+'.html?t='+Date.now())
+      fetch(Lucinda.conf.url_base+template+'.html?t='+Date.now())
           .then(response => response.text())
           .then(html_content => {
             const fields = Lucinda_util.extract_lucinda_placeholders(html_content);
