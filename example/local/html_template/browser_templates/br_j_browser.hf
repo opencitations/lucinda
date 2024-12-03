@@ -1,7 +1,6 @@
 #id main
 #endpoint http://localhost:3333/blazegraph/namespace/kb/sparql
 #url /br/{id}
-#extdata addinfo:get_additional_info()
 #sparql ASK {
     <https://w3id.org/oc/meta/br/[[id]]> a <http://purl.org/spar/fabio/Journal>.
 }

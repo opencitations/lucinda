@@ -1,10 +1,11 @@
 #id main
 #url /br/{id}
+#extdata addinfo:get_additional_info()
 
 #id meta
 #endpoint http://localhost:3333/blazegraph/namespace/kb/sparql
 #method post
-#preprocess generate_id_search(id)
+#preprocess strip(id)
 #postprocess create_metadata_output()
 #sparql PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX pro: <http://purl.org/spar/pro/>
