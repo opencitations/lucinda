@@ -58,9 +58,15 @@ E.G. Lucinda.build_extdata_view("main.myextdata","THIS IS THE NEW VALUE")
 function get_additional_info() {
   console.log("Calling a function to get exteranldata <get_additional_info()>, ","on:",Lucinda.data);
 
-  var new_value = "external value: ID:"+Lucinda.data.meta.id;
-  Lucinda.build_extdata_view("main.addinfo",new_value);
-  return true;
+  function _sleep(ms) {return new Promise(resolve => setTimeout(resolve, ms));}
+  async function executeAfterSleep() {
+    await _sleep(2000);
+    var new_value = "external value: ID:"+Lucinda.data.meta.id;
+    Lucinda.build_extdata_view("main.addinfo",new_value);
+    return true;
+  }
+
+  executeAfterSleep();
 
   // const url = "https://w3id.org/oc/meta/api/v1/metadata/doi:10.1007/978-1-4020-9632-7";
   // fetch(url)
@@ -75,4 +81,5 @@ function get_additional_info() {
   //       var new_value = "error while retrieving data!";
   //       Lucinda.build_extdata_view("main.addinfo",new_value);
   //     });
+
 }
