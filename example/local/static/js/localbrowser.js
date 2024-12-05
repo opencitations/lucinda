@@ -5,11 +5,11 @@ each new view function must take <args> and collect values from <this.data>.
 */
 
 // Add a new method <capitalizetext>
-Lucinda_view.prototype.capitalizetext = function (args) {
+Lucinda_view.prototype.capitalizetext = function (...args) {
   try {
     var text = [];
-    for (let i = 0; i < args.length; i++) {
-      text.push(this.data[args[i]].toUpperCase());
+    for (const arg of args) {
+      text.push(arg.toUpperCase());
     }
     return text.join(", ");
   } catch (e) {
@@ -23,9 +23,11 @@ Lucinda_view.prototype.capitalizetext = function (args) {
 preprocess functions must always return an obj;
 each key represent a param and its corresponding value;
 */
-
-function generate_id_search(id){
-  console.log("Calling a preprocess function <generate_id_search()>, ","on:",id);
+function strip(...args) {
+  console.log("Calling a preprocess function <strip()> on:", args);
+  if (args.length !== 0) {
+    return args.join(" ");
+  }
   return null;
 }
 
@@ -45,25 +47,39 @@ function create_metadata_output(data){
 
 
 /*
-functions to get external data, should always take "...args" as param
-args[0] = data,
-args[1] = callback function
-args[2:] = to be added when calling the callback + the result
-*/
-function get_additional_info(...args) {
-  console.log("Calling a function to get exteranldata <get_additional_info()>, ","on:",args[0]);
+To access the data use:
+Lucinda.data
 
-  const url = "https://w3id.org/oc/meta/api/v1/metadata/doi:10.1007/978-1-4020-9632-7";
-  fetch(url)
-      .then(response => {return response.json();})
-      .then(data => {
-          if (data.length > 0) {
-              var new_value = "Publisher retrieved via Api is : "+data[0].publisher;
-              args[1](new_value,...args.slice(2));
-          }
-      })
-      .catch(error => {
-        var new_value = "error while retrieving data!";
-        args[1](new_value,...args.slice(2));
-      });
+Once done call the following function with the id and the value:
+Lucinda.build_extdata_view
+
+E.G. Lucinda.build_extdata_view("main.myextdata","THIS IS THE NEW VALUE")
+*/
+function get_additional_info() {
+  console.log("Calling a function to get exteranldata <get_additional_info()>, ","on:",Lucinda.data);
+
+  function _sleep(ms) {return new Promise(resolve => setTimeout(resolve, ms));}
+  async function executeAfterSleep() {
+    await _sleep(2000);
+    var new_value = "external value: ID:"+Lucinda.data.meta.id;
+    Lucinda.build_extdata_view("main.addinfo",new_value);
+    return true;
+  }
+
+  executeAfterSleep();
+
+  // const url = "https://w3id.org/oc/meta/api/v1/metadata/doi:10.1007/978-1-4020-9632-7";
+  // fetch(url)
+  //     .then(response => {return response.json();})
+  //     .then(data => {
+  //         if (data.length > 0) {
+  //             var new_value = "Publisher retrieved via Api is : "+data[0].publisher;
+  //             Lucinda.build_extdata_view("main.addinfo",new_value);
+  //         }
+  //     })
+  //     .catch(error => {
+  //       var new_value = "error while retrieving data!";
+  //       Lucinda.build_extdata_view("main.addinfo",new_value);
+  //     });
+
 }

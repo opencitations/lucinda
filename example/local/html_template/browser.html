@@ -29,14 +29,17 @@
       </div>
     </footer>
 
+    <!--<script type="text/javascript" src="../static/js/lucinda.js"></script>-->
 
     <script type="text/javascript" src="../static/js/lucinda.js"></script>
     <script type="text/javascript" src="../static/js/localbrowser.js"></script>
     <script>
       Lucinda.init({
-          url_base: "/browser",
+          url_base: "browser_templates/",
           templates: [
-            "brbrowser"
+            "br_ja_browser", // with ASK if its a Journal Article
+            "br_j_browser", // with ASK if its a Journal
+            "br_any_browser" // anything else
           ],
           local_test: true
       });
