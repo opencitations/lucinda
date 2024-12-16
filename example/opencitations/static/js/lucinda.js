@@ -674,7 +674,13 @@ class Lucinda {
         if (call_method == "POST") {
           endpoint_call = endpoint;
           //args["headers"] = {'CONTENT_TYPE': 'application/sparql-query',};
-          args["query"] = _query;
+          args["headers"] = {
+            "Accept": "text/csv",
+            "Content-Type": "application/sparql-query"
+          };
+
+          args["body"] = _query;
+          //args["redirect"] = "follow";
         }
 
         console.log(endpoint_call,args);

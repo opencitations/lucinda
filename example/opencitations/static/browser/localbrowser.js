@@ -69,7 +69,7 @@ function get_additional_info() {
   // executeAfterSleep();
 
   // This is via OC META API
-  const url = "https://w3id.org/oc/meta/api/v1/metadata/doi:10.1007/978-1-4020-9632-7";
+  const url = "https://test.opencitations.net/meta/api/v1/metadata/doi:10.1007/978-1-4020-9632-7";
   fetch(url)
       .then(response => {return response.json();})
       .then(data => {
