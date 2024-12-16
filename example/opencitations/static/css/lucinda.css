@@ -1,0 +1,76 @@
+:root {
+  --main-bg-color: #F4F3F3;
+  --secondary-bg-color: #DFDFDF;
+  --main-text-color: black;
+  --link-text-color: #37AFE1;
+
+  /*
+  --main-bg-color-night: #1A2F4B;
+  --color-night-p2: #28475C;
+  --color-night-p3: #2F8886;
+  --color-night-p4: #84C69B;
+  */
+}
+
+body{
+  margin: 0px;
+  background-color: var(--main-bg-color);
+}
+
+#__lucinda__ {
+  color: var(--color-main-text);
+  font-family: sans-serif;
+  font-weight: lighter;
+  min-height: 500px;
+  padding: 50px;
+}
+
+#__lucinda__ a{
+  text-decoration: none;
+  color: var(--link-text-color);
+}
+
+#__lucinda__ a:hover {
+  text-decoration: underline;
+}
+
+
+
+/* Container styling for the dots */
+#__lucinda__ .loading-dots {
+  align-items: center;
+  font-weight: bold;
+}
+
+/* General dot styling */
+#__lucinda__ .loading-dots span {
+  animation: blink 1.5s infinite;
+  margin: 0 4px; /* Adjust spacing between dots */
+  color: #000; /* Change the color as needed */
+}
+
+/* Animations for each dot */
+#__lucinda__ .loading-dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+#__lucinda__ .loading-dots span:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+#__lucinda__ .loading-dots span:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+/* Keyframes for blinking effect */
+@keyframes blink {
+  0%, 20% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

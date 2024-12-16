@@ -3,6 +3,7 @@ class Lucinda_util {
       static parse_hf_content(content) {
 
         const lines = content.split('\n'); // Split content into lines
+        var issparql = false;
         const parsedData = [];
         let currentBlock = null;
 
@@ -10,8 +11,13 @@ class Lucinda_util {
             line = line.trim(); // Remove extra whitespace
 
             if (!line || line.startsWith('#') === false) {
-                continue; // Skip empty lines or non-comment lines
+              if (issparql) {
+                currentBlock.sparql += line.trim() + '\n';
+              }
+              continue; // Skip empty lines or non-comment lines
             }
+
+            issparql = false;
 
             if (line.startsWith('#id')) {
                 // New block starts
@@ -24,6 +30,7 @@ class Lucinda_util {
                     // Concatenate sparql lines until empty line or new # key
                     currentBlock.sparql = currentBlock.sparql || '';
                     currentBlock.sparql += line.replace('#sparql', '').trim() + '\n';
+                    issparql = true;
                 } else {
                     // Generic key-value pair
                     const [key, ...valueParts] = line.slice(1).split(' '); // Remove '#' and split
@@ -89,6 +96,19 @@ class Lucinda_util {
         return converted_content;
       }
 
+      // static extract_lucinda_placeholders(text) {
+      //     const regex = /\[\[Lucinda:(\w+)\((.*?)\)\]\]/g;
+      //     var matches = {};
+      //     let match;
+      //     while ((match = regex.exec(text)) !== null) {
+      //       matches[match[0]] = {
+      //         type: match[1],
+      //         value: match[2].split(",").map(arg => arg.trim())
+      //       };
+      //     }
+      //     return matches;
+      // }
+
       static extract_lucinda_placeholders(text) {
           const regex = /\[\[Lucinda:([\s\S]*?)\]\]/g;
           var matches = {};
@@ -98,6 +118,18 @@ class Lucinda_util {
           }
           return matches;
       }
+
+      // static extract_anyfun_placeholders(text) {
+      //     const regex = /(\w+)\((.*?)\)\s{0,}$/g;
+      //     let match;
+      //     while ((match = regex.exec(text)) !== null) {
+      //       return {
+      //         fun: match[1],
+      //         param: match[2].split(",").map(arg => arg.trim())
+      //       };
+      //     }
+      //     return null;
+      // }
 
       static extract_anyfun_placeholders(input) {
           const regex = /(\w+)\(([\s\S]*?)\)\s{0,}$/; // Match the function name and arguments inside parentheses.
@@ -633,17 +665,19 @@ class Lucinda {
           call_method = method.toUpperCase();
         }
 
-        const url_query = `query=${encodeURIComponent(_build_sparql_query())}&format=json`;
+        const _query = Lucinda_util.replace_placeholders(cr_query_block.sparql, Lucinda.current_resource.param)
+
+        const url_query = `query=${encodeURIComponent(_query)}&format=json`;
         var endpoint_call = endpoint+"?"+url_query;
 
         var args = {method: call_method};
         if (call_method == "POST") {
           endpoint_call = endpoint;
-          args["headers"] = {
-            'CONTENT_TYPE': 'application/sparql-query',
-          };
-          args["data"] = url_query;
+          //args["headers"] = {'CONTENT_TYPE': 'application/sparql-query',};
+          args["query"] = _query;
         }
+
+        console.log(endpoint_call,args);
 
         fetch(endpoint_call,args)
           .then(response => response.json())
@@ -715,17 +749,6 @@ class Lucinda {
         }
 
         return window[functionName](data);
-      }
-
-      function _build_sparql_query() {
-
-        if (Lucinda.current_resource.hfconf.sparql != undefined) {
-          return Lucinda_util.replace_placeholders(
-            Lucinda.current_resource.hfconf.sparql,
-            Lucinda.current_resource.param)
-        }
-        return null;
-
       }
     }
 

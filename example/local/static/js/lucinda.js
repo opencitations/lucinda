@@ -196,7 +196,8 @@ class Lucinda_view {
 
 class Lucinda {
     static conf = {
-      url_base: "/",
+      resource: window.location.href,
+      templates_url: "/",
       templates: [],
       addon: null,
       html_error: null,
@@ -231,7 +232,7 @@ class Lucinda {
 
 
       const k_template = Lucinda.conf.templates[c];
-      fetch(Lucinda.conf.url_base + k_template + `.hf?rand=${Math.random()}`)
+      fetch(Lucinda.conf.templates_url + k_template + `.hf?rand=${Math.random()}`)
           .then(response => response.text())
           .then(hf_content => {
               if (hf_content) {
@@ -243,7 +244,7 @@ class Lucinda {
 
       function _get_potential_templates(_templates) {
           var potential_templates = [];
-          const href_path = window.location.href;
+          const href_path = Lucinda.conf.resource;
           for (const _k in _templates) {
             // the main block is always the first one
             const main_block = _templates[_k][0];
@@ -484,7 +485,7 @@ class Lucinda {
 
       Lucinda.lv = new Lucinda_view( Lucinda.data );
       const template = Lucinda.current_resource.template;
-      fetch(Lucinda.conf.url_base+template+`.html?rand=${Math.random()}`)
+      fetch(Lucinda.conf.templates_url+template+`.html?rand=${Math.random()}`)
           .then(response => response.text())
           .then(html_content => {
             const fields = Lucinda_util.extract_lucinda_placeholders(html_content);

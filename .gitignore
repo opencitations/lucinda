@@ -1,3 +1,4 @@
-example/local/proxy_server
+example/local_webpy
+example/local_webpy
 .DS_Store
 __local__*

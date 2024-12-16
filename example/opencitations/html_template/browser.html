@@ -1,3 +1,5 @@
+$def with (path)
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -5,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link href="../static/css/lucinda.css" rel="stylesheet">
+
     <!-- Custom styles for this template -->
     <link href="../static/css/browser.css" rel="stylesheet">
 
@@ -29,20 +32,19 @@
       </div>
     </footer>
 
-    <!--<script type="text/javascript" src="../static/js/lucinda.js"></script>-->
 
     <script type="text/javascript" src="../static/js/lucinda.js"></script>
-    <script type="text/javascript" src="../static/js/localbrowser.js"></script>
+    <script type="text/javascript" src="../static/browser/localbrowser.js"></script>
     <script>
       Lucinda.init({
-          //resource: path, // this value depends on the web server
-          templates_url: "browser_templates/",
+          //resource: "$path",
+          templates_url: "../static/browser/templates/",
           templates: [
-            "br_ja_browser", // with ASK if its a Journal Article
-            "br_j_browser", // with ASK if its a Journal
+            // "br_ja_browser", // with ASK if its a Journal Article
+            // "br_j_browser", // with ASK if its a Journal
             "br_any_browser" // anything else
           ],
-          local_test: true
+          local_test: false
       });
       Lucinda.run();
     </script>
