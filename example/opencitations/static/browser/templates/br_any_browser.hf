@@ -3,7 +3,7 @@
 #extdata addinfo:get_additional_info()
 
 #id meta
-#endpoint http://test.opencitations.net/meta/sparql
+#endpoint https://test.opencitations.net/meta/sparql
 #method post
 #preprocess strip(id)
 #postprocess create_metadata_output()
