@@ -211,7 +211,6 @@ class Lucinda_view {
   /*returns true if <l_att> are all ready in <this.data>*/
   is_ready(view_fun, l_k_att, params_not_ready = []){
 
-      console.log("To execute",view_fun," with params",l_k_att);
       for (let i = 0; i < l_k_att.length; i++) {
         const a_param = l_k_att[i];
 
@@ -225,14 +224,14 @@ class Lucinda_view {
             if ((this.command_fun.includes(view_fun)) && (i == 0)) {
               const command_vars = Lucinda_util.command_vars(a_param);
               for (let j = 0; j < command_vars.length; j++) {
-                if (this.get_nested_value(command_vars[j]) == undefined) {
+                if (this.get_nested_value(command_vars[j]) === undefined) {
                   params_not_ready.push(command_vars[j]);
                 }
               }
               continue
             }
 
-            if (this.get_nested_value(a_param) == undefined) {
+            if (this.get_nested_value(a_param) === undefined) {
               params_not_ready.push( a_param );
             }
           }
@@ -337,7 +336,7 @@ class Lucinda_view {
 
     let lv_instance = this;
 
-    const regex = /([\w.]+)\s*(==|!=|>=|=<|>|<)\s*([\w\d.]+)|\(|\)|&&|\|\|/g;
+    const regex = /([\w.]+)\s*(==|===|!=|!==|>=|=<|>|<)\s*([\w\d.]+)|\(|\)|&&|\|\|/g;
     let parsedExpression = s.replace(regex, (match, variable, operator, value) => {
       if (variable && operator && value) {
         const var_value = lv_instance.get_nested_value(variable);
@@ -349,13 +348,21 @@ class Lucinda_view {
 
     function ___evaluate_opr(var_value, operator, value) {
       const val = isNaN(value) ? var_value : parseFloat(value);
+      if (val == "null") {
+        val = null;
+      }
+      if (val == "undefined") {
+        val = undefined;
+      }
       switch (operator) {
         case ">": return var_value > val;
         case "<": return var_value < val;
         case ">=": return var_value >= val;
         case "=<": return var_value <= val;
         case "==": return var_value == val;
+        case "===": return var_value === val;
         case "!=": return var_value != val;
+        case "!==": return var_value !== val;
         default: return false;
       }
     }
@@ -476,9 +483,34 @@ class Lucinda {
       resource: window.location.href,
       templates_url: "/",
       templates: [],
-      addon: null,
-      html_error: null,
-      local_test: false
+      html_error_template: null,
+      local_test: false,
+
+      endpoint: [
+          {
+            id: "*",
+            requests: {
+              get: {
+                query_preprocess: "encodeURIComponent",
+                url_param: "?query=[[sparql]]&format=json",
+                args:{
+                  "method": "GET"
+                },
+                success_controller: "reqhandler_spqrqljson"
+              },
+              post: {
+                args:{
+                  headers:{
+                    "Accept": "application/json",
+                    "Content-Type": "application/sparql-query",
+                  },
+                  method: "POST"
+                },
+                success_controller: "reqhandler_spqrqljson"
+              }
+            }
+          }
+      ]
     }
     static current_resource = [];
     static data = {};
@@ -491,6 +523,10 @@ class Lucinda {
           Lucinda.conf[_k] = _conf[_k];
         }
       }
+    }
+
+    static add_endpoint_handler(endpoint_conf) {
+      Lucinda.conf.endpoint.push(endpoint_conf);
     }
 
     static run( c = 0, templates = {} ) {
@@ -612,7 +648,7 @@ class Lucinda {
             console.log("Error: id field must be specified to define a query");
             return null;
           }
-          Lucinda.data[cr_query_block.id] = null;
+          Lucinda.data[cr_query_block.id] = undefined;
         }
 
         for (let i = 1; i < current_resource_hfconf.length; i++) {
@@ -648,7 +684,7 @@ class Lucinda {
             }
         ];
         Lucinda.data[cr_query_block.id] = _postprocess(data, cr_query_block);
-        if (Object.values(Lucinda.data).every(value => value !== null)) {
+        if (Object.values(Lucinda.data).every(value => value !== undefined)) {
           Lucinda.build_success_html_page();
         }
 
@@ -659,40 +695,45 @@ class Lucinda {
           return null;
         }
 
-        const method = cr_query_block.method;
-        var call_method = "GET";
-        if (method) {
-          call_method = method.toUpperCase();
+        // Search in Lucinda.endpoint the object with this endpoint name
+        // if not there take default one "*"
+        let endpoint_conf = Lucinda.conf.endpoint.find((item) => item.id === endpoint);
+        if (!(endpoint_conf)) {
+          endpoint_conf = Lucinda.conf.endpoint.find((item) => item.id === "*");
         }
 
-        const _query = Lucinda_util.replace_placeholders(cr_query_block.sparql, Lucinda.current_resource.param)
+        // build query and call query_preprocess if in conf
+        let _query = Lucinda_util.replace_placeholders(cr_query_block.sparql, Lucinda.current_resource.param);
+        if ("query_preprocess" in endpoint_conf) {
+          _query = window[endpoint_conf["query_preprocess"]](_query);
+        }
 
-        const url_query = `query=${encodeURIComponent(_query)}&format=json`;
-        var endpoint_call = endpoint+"?"+url_query;
-
-        var args = {method: call_method};
-        if (call_method == "POST") {
-          endpoint_call = endpoint;
-          //args["headers"] = {'CONTENT_TYPE': 'application/sparql-query',};
-          args["headers"] = {
-            "Accept": "text/csv",
-            "Content-Type": "application/sparql-query"
-          };
-
+        const req_conf = endpoint_conf.requests[cr_query_block.method]
+        let url_query = "";
+        if ("url_param" in req_conf) {
+          url_query = req_conf["url_param"].replace(/\[\[sparql\]\]/, _query);
+        }
+        const endpoint_call = endpoint+url_query;
+        const args = req_conf.args
+        if (cr_query_block.method == "post") {
           args["body"] = _query;
-          //args["redirect"] = "follow";
         }
 
-        console.log(endpoint_call,args);
-
+        console.log("Call endpoint:",endpoint_call," with Args:", args);
         fetch(endpoint_call,args)
           .then(response => response.json())
           .then(data => {
-            Lucinda.data[cr_query_block.id] = _postprocess(data, cr_query_block);
 
-            // when all pending queries are done build the HTML page
-            if (Object.values(Lucinda.data).every(value => value !== null)) {
-              Lucinda.build_success_html_page();
+            const fun_success_controller = req_conf.success_controller;
+            let resource_normal = Lucinda[fun_success_controller](data);
+            if (resource_normal == null) {
+              Lucinda.build_error_html_page();
+            }else {
+              Lucinda.data[cr_query_block.id] = _postprocess(resource_normal, cr_query_block);
+              // when all pending queries are done build the HTML page
+              if (Object.values(Lucinda.data).every(value => value !== undefined)) {
+                Lucinda.build_success_html_page();
+              }
             }
           })
           .catch(error => {
@@ -759,7 +800,7 @@ class Lucinda {
     }
 
     static build_success_html_page(){
-      console.log("Building HTML success page!");
+      //console.log("Building HTML success page!");
 
       Lucinda.lv = new Lucinda_view( Lucinda.data );
       const template = Lucinda.current_resource.template;
@@ -838,7 +879,6 @@ class Lucinda {
         for (let i = 0; i < ext_data.length; i++) {
           var [field_id, ext_fun] = ext_data[i].split(":");
           field_id = main_block["id"]+"."+field_id;
-          console.log("run external data:",field_id,ext_fun,Lucinda.extdata);
           //if (field_id in Lucinda.extdata) {
           const call_extfun = _extfun(ext_fun);
           window[call_extfun]();
@@ -862,6 +902,47 @@ class Lucinda {
 
     static build_error_html_page(){
       console.log("Building HTML error page!");
-      document.getElementById('__lucinda__').innerHTML = "<html><head></head><body><h1>Error while loading the desired resource!</h1></body></html>";
+      if (Lucinda.conf.html_error_template != null) {
+        fetch(Lucinda.conf.templates_url+Lucinda.conf.html_error_template+`.html?rand=${Math.random()}`)
+            .then(response => response.text())
+            .then(html_content => {
+              document.getElementById('__lucinda__').innerHTML = html_content;
+            })
+            .catch(error => {console.error('Error loading the HTML file:', error);});
+
+      }else {
+          document.getElementById('__lucinda__').innerHTML = "<html><head></head><body><h1>Error while loading the desired resource!</h1></body></html>";
+      }
+    }
+
+    /*
+    Requests Handlers
+    Each requests handler takes the request result (<data>) and must return an object like:
+    {
+      "id": "ID-VAL",
+      "title": "TITLE-VAL",
+      "pub_date": A-YEAR,
+      "author": ["NAME-1","NAME-2",...],
+    ...}
+    */
+    static reqhandler_spqrqljson(data){
+        if (data.results.bindings.length > 0) {
+          // Initialize resource_normal object with empty values for each variable in head.vars
+          const resource_normal = data.head.vars.reduce((acc, varName) => {
+              acc[varName] = null;
+              return acc;
+          }, {});
+
+          // Loop through bindings and update resource_normal with actual values where available
+          [data.results.bindings[0]].forEach((binding) => {
+              Object.keys(binding).forEach((key) => {
+                  if (binding[key].value !== undefined) {
+                      resource_normal[key] = binding[key].value; // Assign the value if exists
+                  }
+              });
+          });
+          return resource_normal;
+      }
+      return null;
     }
 }
