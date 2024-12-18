@@ -18,6 +18,7 @@ Lucinda is a general RDF-resource browser which could be configured to work with
   ```
   <script type="text/javascript" src="path/to/lucinda.js"></script>
   <script type="text/javascript" src="path/to/lucinda_custom_dir/my_lucionda_addon.js"></script>
+  ```
 
 - **3.** Define your resource template(s):
   - Create a templates directory within your custom Lucinda directory, such as `static/browser/templates/`.
