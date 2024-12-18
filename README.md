@@ -12,23 +12,27 @@ Lucinda is a general RDF-resource browser which could be configured to work with
   ```<link href="path/to/lucinda.css" rel="stylesheet">```
   - Import Lucinda JS at the end of your HTML file (typically after the `<footer>`):
   ```<script type="text/javascript" src="path/to/lucinda.js"></script>```
-  - In case you have a custom JS addon file, import it right after the Lucinda JS previously imported:
+  - Create a directory to store your custom Lucinda files. For best practices, place this directory within your static folder, such as `static/browser/`.
+
+- **2.** In case you have a custom JS addon file, create it in your custom Lucinda directory and it right after the Lucinda JS previously imported:
   ```
   <script type="text/javascript" src="path/to/lucinda.js"></script>
-  <script type="text/javascript" src="path/to/my_lucionda_addon.js"></script>
-  ```
+  <script type="text/javascript" src="path/to/lucinda_custom_dir/my_lucionda_addon.js"></script>
 
-- **2.** Define your resource template(s), each template is defined by:
-  - HF file, have a look at the guidelines on how to correctly define it.
-  - HTML file, have a look at the guidelines on how to correctly define it.
+- **3.** Define your resource template(s):
+  - Create a templates directory within your custom Lucinda directory, such as `static/browser/templates/`.
+  - Each template is defined by two files, to be added in the directory just created:
+    - HF file, have a look at the guidelines on how to correctly define it (TBA).
+    - HTML file, have a look at the guidelines on how to correctly define it (TBA).
 
-- **3.** Run Lucinda:
-  - From your browsing page (of step **(1)**), add `<script>` block right after the imported JS modules and set the default configurations of Lucinda (have a look at the guidelines on how to correctly do this):
+- **4.** Run Lucinda:
+  - From your browsing page (of step **(1)**), add `<script>` block right after the imported JS modules and set the default configurations of Lucinda (have a look at the guidelines on how to correctly do this (TBA) ):
   ```
   Lucinda.init({
-      url_base: "/browser",
+      templates_url: "/static/browser/templates/",
       templates: [
-        "brbrowser"
+        "br_any_browser",
+        ...
       ]
   });
   ```

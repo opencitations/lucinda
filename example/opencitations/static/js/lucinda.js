@@ -340,19 +340,19 @@ class Lucinda_view {
     let parsedExpression = s.replace(regex, (match, variable, operator, value) => {
       if (variable && operator && value) {
         const var_value = lv_instance.get_nested_value(variable);
-        return ___evaluate_opr(var_value, operator, value);
+        const eval_opr = ___evaluate_opr(var_value, operator, value);
+        return eval_opr;
       }
       return match; // Keep parentheses and logical operators
     });
     return eval(parsedExpression);
 
     function ___evaluate_opr(var_value, operator, value) {
-      const val = isNaN(value) ? var_value : parseFloat(value);
-      if (val == "null") {
+      let val = undefined;
+      if (value == "null") {
         val = null;
-      }
-      if (val == "undefined") {
-        val = undefined;
+      }else {
+        let val = isNaN(parseFloat(value)) ? String(value) : parseFloat(value);
       }
       switch (operator) {
         case ">": return var_value > val;
@@ -494,6 +494,9 @@ class Lucinda {
                 query_preprocess: "encodeURIComponent",
                 url_param: "?query=[[sparql]]&format=json",
                 args:{
+                  headers:{
+                    "Accept": "application/sparql-results+json"
+                  },
                   "method": "GET"
                 },
                 success_controller: "reqhandler_spqrqljson"
@@ -525,11 +528,10 @@ class Lucinda {
       }
     }
 
-    static add_endpoint_handler(endpoint_conf) {
-      Lucinda.conf.endpoint.push(endpoint_conf);
-    }
-
     static run( c = 0, templates = {} ) {
+
+      // before starting add a loading banner in __lucinda__
+      Lucinda.add_main_loading_banner();
 
       // when all templates have been scanned, work on the suitable potential templates
       if (c >= Lucinda.conf.templates.length) {
@@ -702,13 +704,14 @@ class Lucinda {
           endpoint_conf = Lucinda.conf.endpoint.find((item) => item.id === "*");
         }
 
+        const req_conf = endpoint_conf.requests[cr_query_block.method]
+
         // build query and call query_preprocess if in conf
         let _query = Lucinda_util.replace_placeholders(cr_query_block.sparql, Lucinda.current_resource.param);
-        if ("query_preprocess" in endpoint_conf) {
-          _query = window[endpoint_conf["query_preprocess"]](_query);
+        if ("query_preprocess" in req_conf) {
+          _query = window[req_conf["query_preprocess"]](_query);
         }
 
-        const req_conf = endpoint_conf.requests[cr_query_block.method]
         let url_query = "";
         if ("url_param" in req_conf) {
           url_query = req_conf["url_param"].replace(/\[\[sparql\]\]/, _query);
@@ -723,7 +726,7 @@ class Lucinda {
         fetch(endpoint_call,args)
           .then(response => response.json())
           .then(data => {
-
+            console.log('data retrieved from endpoint:', data);
             const fun_success_controller = req_conf.success_controller;
             let resource_normal = Lucinda[fun_success_controller](data);
             if (resource_normal == null) {
@@ -781,7 +784,7 @@ class Lucinda {
       function _postprocess(data, cr_query_block) {
 
         if (!("postprocess" in cr_query_block)) {
-          return false;
+          return data;
         }
 
         const f_call = cr_query_block["postprocess"];
@@ -800,7 +803,7 @@ class Lucinda {
     }
 
     static build_success_html_page(){
-      //console.log("Building HTML success page!");
+      console.log("Building HTML success page! with data = ",Lucinda.data);
 
       Lucinda.lv = new Lucinda_view( Lucinda.data );
       const template = Lucinda.current_resource.template;
@@ -915,6 +918,11 @@ class Lucinda {
       }
     }
 
+    static add_main_loading_banner(){
+      document.getElementById('__lucinda__').innerHTML = "<div id='lucinda_pendinghtml_main_loading'>Loading the resource<br><span class='loading-dots'><span>.</span><span>.</span><span>.</span> </span></div>";
+    }
+
+
     /*
     Requests Handlers
     Each requests handler takes the request result (<data>) and must return an object like:
@@ -925,6 +933,10 @@ class Lucinda {
       "author": ["NAME-1","NAME-2",...],
     ...}
     */
+    static add_endpoint_handler(endpoint_conf) {
+      Lucinda.conf.endpoint.push(endpoint_conf);
+    }
+
     static reqhandler_spqrqljson(data){
         if (data.results.bindings.length > 0) {
           // Initialize resource_normal object with empty values for each variable in head.vars
@@ -934,13 +946,17 @@ class Lucinda {
           }, {});
 
           // Loop through bindings and update resource_normal with actual values where available
-          [data.results.bindings[0]].forEach((binding) => {
+          data.results.bindings.forEach((binding) => {
               Object.keys(binding).forEach((key) => {
+                  if (resource_normal[key] == null) {
+                    resource_normal[key] = [];
+                  }
                   if (binding[key].value !== undefined) {
-                      resource_normal[key] = binding[key].value; // Assign the value if exists
+                      resource_normal[key].push( binding[key].value ); // Assign the value if exists
                   }
               });
           });
+
           return resource_normal;
       }
       return null;
