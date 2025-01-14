@@ -25,6 +25,13 @@ body{
   padding: 50px;
 }
 
+#__lucinda__ .lucinda-error-msg{
+  text-align: center;
+  color: #F72C5B;
+  padding: 20px;
+  border: solid 1px #F72C5B;
+}
+
 #__lucinda__ a{
   text-decoration: none;
   color: var(--link-text-color);
