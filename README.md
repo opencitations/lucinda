@@ -1,7 +1,7 @@
 <img src="doc/lucinda_logo.svg" alt="drawing" width="350"/>
 
 ### The OpenCitations RDF Resource Browser (v3.0)
-Lucinda is a general RDF-resource browser which could be configured to work with any triplestore providing a SPARQL-endpoint address. In this repository you can find few [examples](examples/) of Lucinda usage. Lucinda was first presented at [Wikicite2018](https://meta.wikimedia.org/wiki/WikiCite_2018).
+Lucinda is a general RDF-resource browser which could be configured to work with any triplestore providing a SPARQL-endpoint address. In this repository you can find few [examples](example/) of Lucinda usage. Lucinda was first presented at [Wikicite2018](https://meta.wikimedia.org/wiki/WikiCite_2018).
 
 # LUCINDA Configuration
 
@@ -24,17 +24,17 @@ Lucinda is a general RDF-resource browser which could be configured to work with
 
 - **4.** Define your resource template(s):
   - Create a templates directory within your custom Lucinda directory, such as `static/browser/templates/`.
-  - Each template is defined by two files, to be added in the directory just created:
+  - Each template is defined by two files, to be added in the directory just created (**Note: both files should have the same name, e.g. *rsc_tmpleate.hf* and *rsc_tmpleate.html***):
     - **HF file**, have a look at the guidelines on how to correctly define it (TBA).
     - **HTML file**, have a look at the guidelines on how to correctly define it (TBA).
 
-- **4.** Run Lucinda:
+- **5.** Run Lucinda:
   - From your browsing page (step **(1)**), add `<script>` block right after the imported JS modules (step **(3)**) and set the default configurations of Lucinda (have a look at the guidelines on how to correctly do this (TBA) ):
   ```
   Lucinda.init({
       templates_url: "/static/browser/templates/",
       templates: [
-        "br_any_browser",
+        "rsc_tmpleate",
         ...
       ]
   });

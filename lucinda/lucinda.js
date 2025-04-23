@@ -199,8 +199,7 @@ class Lucinda_view {
     this.data = data;
     this.pending_html = {};
     this.terminal_fun = [
-      "htmlcontent",
-      "val"
+      "htmlcontent"
     ];
     this.command_fun = [
       "ifcond"
@@ -382,24 +381,11 @@ class Lucinda_view {
   }
 
   /*Returns just the text*/
-  text(...args){
+  val(...args){
     try {
       return args.join(", ");
     } catch (e) {
       return "";
-    }
-  }
-
-  /*Returns just the text*/
-  val(...args){
-    let values = [];
-    try {
-      for (let i = 0; i < args.length; i++) {
-        values.push(JSON.parse(args[i]));
-      }
-      return values;
-    } catch (e) {
-      return [];
     }
   }
 
@@ -494,7 +480,7 @@ class Lucinda {
                   headers:{
                     "Accept": "application/sparql-results+json"
                   },
-                  "method": "GET"
+                  method: "GET"
                 },
                 success_controller: "reqhandler_spqrqljson"
               },
@@ -502,7 +488,7 @@ class Lucinda {
                 args:{
                   headers:{
                     "Accept": "application/json",
-                    "Content-Type": "application/sparql-query",
+                    "Content-Type": "application/sparql-query"
                   },
                   method: "POST"
                 },
@@ -773,21 +759,33 @@ class Lucinda {
       }
 
       // Process the arguments using `param` for mapping
-      const arg_list = args
-          .split(',')
-          .map(arg => arg.trim())
-          .filter(arg => arg !== "")
-          .map(arg => param[arg] !== undefined ? param[arg] : arg);
+      const keys = args
+        .split(',')
+        .map(arg => arg.trim())
+        .filter(arg => arg !== "");
 
-      var res = window[functionName](...arg_list);
-      if ((res != undefined) && (res != null) && (typeof res === 'object')){
-        // for (const _k in res) {
-        //   if (_k in Lucinda.current_resource.param) {
-        //     Lucinda.current_resource.param[_k] = res[_k];
-        //   }
-        // }
-        return res;
+      const values = keys.map(key => {
+        const value = param[key];
+        if (value === undefined) return key;
+        return Array.isArray(value) ? value[0] : value;
+      });
+
+      var newValues = window[functionName](...values);
+
+      let newValues_obj = {};
+      if (Array.isArray(newValues) && newValues != null) {
+
+        for (let i = 0; i < keys.length; i++) {
+          newValues_obj[keys[i]] = newValues[i];
+        }
+
+        for (const k in param) {
+          if (k in newValues_obj) {
+            param[k] = newValues_obj[k];
+          }
+        }
       }
+
       return param;
     }
 
@@ -808,7 +806,35 @@ class Lucinda {
           throw new Error(`Postprocess function not found: ${functionName}`);
       }
 
-      return window[functionName](data);
+      // Process the arguments using `param` for mapping
+      const keys = args
+        .split(',')
+        .map(arg => arg.trim())
+        .filter(arg => arg !== "");
+
+      const values = keys.map(key => {
+        const value = data[key];
+        if (value === undefined) return key;
+        return Array.isArray(value) ? value[0] : value;
+      });
+
+      var newValues = window[functionName](...values);
+
+      let newValues_obj = {};
+      if (Array.isArray(newValues) && newValues != null) {
+
+        for (let i = 0; i < keys.length; i++) {
+          newValues_obj[keys[i]] = newValues[i];
+        }
+
+        for (const k in data) {
+          if (k in newValues_obj) {
+            data[k] = newValues_obj[k];
+          }
+        }
+      }
+
+      return data;
     }
 
     static build_success_html_page(){
@@ -886,13 +912,12 @@ class Lucinda {
           var [field_id, ext_fun] = ext_data[i].split(":");
           field_id = main_block["id"]+"."+field_id;
           //if (field_id in Lucinda.extdata) {
-          const call_extfun = _extfun(ext_fun);
-          window[call_extfun]();
+          const call_extfun = _extfun(field_id, ext_fun);
           //}
         }
       }
 
-      function _extfun(data_extfun) {
+      function _extfun(field_id, data_extfun) {
         const match = data_extfun.match(/^(\w+)\((.*?)\)$/);
         if (!match) {
           throw new Error(`Invalid external function call syntax: ${data_extfun}`);
@@ -902,7 +927,10 @@ class Lucinda {
         if (typeof window[functionName] !== 'function') {
             throw new Error(`Postprocess function not found: ${functionName}`);
         }
-        return functionName;
+
+        // Call the function with field_id
+        return window[functionName](field_id);
+
       }
     }
 

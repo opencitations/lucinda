@@ -1,4 +1,3 @@
-example/local_webpy
-example/local_webpy
+example/local_*
 .DS_Store
 __local__*
