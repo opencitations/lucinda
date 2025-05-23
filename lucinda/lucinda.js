@@ -36,7 +36,8 @@ class Lucinda_util {
                     const [key, ...valueParts] = line.slice(1).split(' '); // Remove '#' and split
                     const value = valueParts.join(' ').trim();
                     if (key in currentBlock) {
-                      currentBlock[key] = [currentBlock[key]].push(value);
+                      currentBlock[key] = [currentBlock[key]];
+                      currentBlock[key].push(value);
                     }else {
                       currentBlock[key] = value;
                     }
@@ -96,42 +97,21 @@ class Lucinda_util {
         return converted_content;
       }
 
-      // static extract_lucinda_placeholders(text) {
-      //     const regex = /\[\[Lucinda:(\w+)\((.*?)\)\]\]/g;
-      //     var matches = {};
-      //     let match;
-      //     while ((match = regex.exec(text)) !== null) {
-      //       matches[match[0]] = {
-      //         type: match[1],
-      //         value: match[2].split(",").map(arg => arg.trim())
-      //       };
-      //     }
-      //     return matches;
-      // }
+      static extract_lucinda_placeholders(text,lv) {
+          // Remove all HTML comments
+          const noComments = text.replace(/<!--[\s\S]*?-->/g, '');
 
-      static extract_lucinda_placeholders(text) {
+          // Now apply your Lucinda placeholder regex
           const regex = /\[\[Lucinda:([\s\S]*?)\]\]/g;
           var matches = {};
           let match;
-          while ((match = regex.exec(text)) !== null) {
-            matches[match[0]] = this.extract_anyfun_placeholders(match[1]);
+          while ((match = regex.exec(noComments)) !== null) {
+              matches[match[0]] = this.extract_anyfun_placeholders(match[1],lv);
           }
           return matches;
       }
 
-      // static extract_anyfun_placeholders(text) {
-      //     const regex = /(\w+)\((.*?)\)\s{0,}$/g;
-      //     let match;
-      //     while ((match = regex.exec(text)) !== null) {
-      //       return {
-      //         fun: match[1],
-      //         param: match[2].split(",").map(arg => arg.trim())
-      //       };
-      //     }
-      //     return null;
-      // }
-
-      static extract_anyfun_placeholders(input) {
+      static extract_anyfun_placeholders(input,lv) {
           const regex = /(\w+)\(([\s\S]*?)\)\s{0,}$/; // Match the function name and arguments inside parentheses.
 
           function parse(call) {
@@ -141,25 +121,29 @@ class Lucinda_util {
               const funcName = match[1]; // Function name
               const rawArgs = match[2]; // Raw arguments string
 
-              // Split arguments by commas while respecting nested parentheses
-              const args = [];
-              let currentArg = '';
-              let depth = 0;
+              let parsedArgs = [rawArgs];
+              // Only NON terminal functions must be processed in depth
+              if (!(lv.terminal_fun.includes(funcName))) {
+                // Split arguments by commas while respecting nested parentheses
+                const args = [];
+                let currentArg = '';
+                let depth = 0;
 
-              for (let char of rawArgs) {
-                  if (char === ',' && depth === 0) {
-                      args.push(currentArg.trim());
-                      currentArg = '';
-                  } else {
-                      if (char === '(') depth++;
-                      if (char === ')') depth--;
-                      currentArg += char;
-                  }
+                for (let char of rawArgs) {
+                    if (char === ',' && depth === 0) {
+                        args.push(currentArg.trim());
+                        currentArg = '';
+                    } else {
+                        if (char === '(') depth++;
+                        if (char === ')') depth--;
+                        currentArg += char;
+                    }
+                }
+                if (currentArg) args.push(currentArg.trim()); // Add the last argument.
+
+                // Recursively parse arguments
+                parsedArgs = args.map(arg => parse(arg));
               }
-              if (currentArg) args.push(currentArg.trim()); // Add the last argument.
-
-              // Recursively parse arguments
-              const parsedArgs = args.map(arg => parse(arg));
 
               return {
                   fun: funcName,
@@ -190,20 +174,221 @@ class Lucinda_util {
         return sanitizedString;
       }
 
-}
+      static sort_by_key(array, key, type = 'string', ascending = true) {
+        return array.sort((a, b) => {
+          let valA = a[key];
+          let valB = b[key];
 
+          // Convert values based on specified type
+          if (type === 'number') {
+            valA = Number(valA);
+            valB = Number(valB);
+          } else if (type === 'date') {
+            valA = new Date(valA);
+            valB = new Date(valB);
+          } else {
+            valA = String(valA);
+            valB = String(valB);
+          }
+
+          // Compare values
+          if (valA < valB) return ascending ? -1 : 1;
+          if (valA > valB) return ascending ? 1 : -1;
+          return 0;
+        });
+      }
+
+      static merge_data(original, update) {
+          const originalHeader = original[0];
+          const updateHeader = update[0];
+
+          const allHeaders = Array.from(new Set([...originalHeader, ...updateHeader]));
+          const headerIndexMap = allHeaders.map(h => ({
+            key: h,
+            originalIdx: originalHeader.indexOf(h),
+            updateIdx: updateHeader.indexOf(h)
+          }));
+
+          const mergedRows = [];
+
+          // Add merged header
+          mergedRows.push(allHeaders);
+
+          for (let i = 1; i < original.length; i++) {
+            const originalRow = original[i];
+            const updateRow = update[i];
+
+            const mergedRow = headerIndexMap.map(({ originalIdx, updateIdx }) => {
+              if (updateIdx !== -1 && updateRow[updateIdx] !== undefined) {
+                return updateRow[updateIdx];
+              } else if (originalIdx !== -1 && originalRow[originalIdx] !== undefined) {
+                return originalRow[originalIdx];
+              } else {
+                return null;
+              }
+            });
+
+            mergedRows.push(mergedRow);
+          }
+
+          return mergedRows;
+      }
+
+      static obj2matrix(obj) {
+        const keys = Object.keys(obj);
+        const values = Object.values(obj);
+
+        const maxLen = Math.max(
+          ...values.map(v => Array.isArray(v) ? v.length : 1)
+        );
+
+        // Normalize values: make all arrays the same length
+        const normalized = values.map(value => {
+          if (Array.isArray(value)) {
+            if (value.length < maxLen) {
+              const last = value[value.length - 1];
+              return [...value, ...Array(maxLen - value.length).fill(last)];
+            }
+            return value;
+          } else {
+            return Array(maxLen).fill(value);
+          }
+        });
+
+        // Transpose to get row-wise format
+        const matrix = Array.from({ length: maxLen }, (_, i) =>
+          normalized.map(col => col[i])
+        );
+
+        // Prepend header
+        matrix.unshift(keys);
+
+        return matrix;
+      }
+
+      static matrix2obj(data) {
+
+        let header = this.lucinda_unformat(data).getHeader();
+        let rows = this.lucinda_unformat(data).getData();
+        return rows.map(row =>
+          Object.fromEntries(header.map((key, i) => [key, row[i]]))
+        );
+      }
+
+      static isobject(val) {
+        return val !== null && typeof val === 'object' && !Array.isArray(val);
+      }
+
+      static getCol(matrix, headerName) {
+
+          if (!Array.isArray(matrix) || matrix.length === 0) return [];
+
+          const header = matrix[0];
+          const colIndex = header.indexOf(headerName);
+
+          if (colIndex === -1) return [headerName]; // return header anyway if not found
+
+          return [headerName, ...matrix.slice(1).map(row => row[colIndex])];
+      }
+
+      static arrObj2matrix(header,rows, val_key = undefined){
+
+        let res_normal = [];
+        res_normal.push(header);
+
+        if (rows.length > 0) {
+            rows.forEach((binding) => {
+              let row = [];
+              for (let i = 0; i < header.length; i++) {
+                let v_binding = binding[header[i]];
+                if (v_binding == undefined) {
+                  row.push(null);
+                }else {
+                  if (val_key) {
+                    row.push(v_binding[val_key]);
+                  }else {
+                    row.push(v_binding);
+                  }
+                }
+              }
+              res_normal.push(row);
+            });
+        }
+        return res_normal;
+      }
+
+      static lucinda_format(val, header = null) {
+        let res = [];
+
+        if (typeof val === "string") {
+            // Single value string
+            res.push(header ? header : [1]);
+            res.push([val]);
+        } else if (Array.isArray(val) && val.every(item => typeof item === "string")) {
+            // Array of strings
+            res.push(header ? header : val.map((_, i) => i + 1));
+            res.push(val);
+        } else if (Array.isArray(val) && val.every(item => Array.isArray(item))) {
+            // Array of arrays (matrix)
+            res.push(header ? header : val[0].map((_, i) => i + 1));
+            res.push(...val);
+        } else {
+            throw new Error("Unsupported data format for 'val'");
+        }
+
+        return res;
+    }
+
+      static lucinda_unformat(formatted) {
+        if (!Array.isArray(formatted) || formatted.length === 0) {
+          return {
+            header: [],
+            data: [],
+            getHeader() {
+              return [];
+            },
+            getData() {
+              return [];
+            }
+          };
+        }
+
+        const [header, ...data] = formatted;
+
+        return {
+          header: Array.isArray(header) ? header : [],
+          data: Array.isArray(data) ? data : [],
+          getHeader() {
+            return Array.isArray(header) ? header : [];
+          },
+          getData() {
+            return Array.isArray(data) && data.length > 0 ? data : [];
+          }
+        };
+      }
+
+}
 
 class Lucinda_view {
 
   constructor(data) {
     this.data = data;
     this.pending_html = {};
+
+    // Terminal functions are functions that:
+    // > Cannot take other functions as arguments
+    // > Can take only one argument
+    // > Have only arguments ready (already with values)
     this.terminal_fun = [
-      "htmlcontent"
+      "htmlcontent",
+      "fun_",
+      "data_"
     ];
+
     this.command_fun = [
       "ifcond"
     ];
+
     this.fun_re = /([^"]+)\(([^"]+)\)/;
   }
 
@@ -214,7 +399,7 @@ class Lucinda_view {
         const a_param = l_k_att[i];
 
         if (typeof a_param === 'object') {
-          params_not_ready.concat( this.is_ready(a_param["fun"], a_param["param"]) );
+          params_not_ready = params_not_ready.concat( this.is_ready(a_param["fun"], a_param["param"]) );
         }else {
           if (this.terminal_fun.includes(view_fun)) {
             continue;
@@ -236,20 +421,50 @@ class Lucinda_view {
           }
         }
       }
+
       return params_not_ready;
   }
 
   /*get get_nested_value from <this.data>*/
   get_nested_value(_path) {
-    const keys = _path.split('.');
-    let current = this.data;
-    for (const key of keys) {
-      if (current[key] === undefined) {
-        return undefined; // Return undefined if any key is not found
+
+    let l_res = {};
+
+    const l_vars = _path.split(";").map(s => s.trim());
+    for (let i = 0; i < l_vars.length; i++) {
+      let a_var = l_vars[i];
+      l_res[a_var] = [];
+
+      const keys = a_var.split('.');
+      let current = this.data;
+      for (const key of keys) {
+        if (current[key] === undefined) {
+          if (Array.isArray(current)) {
+            if (current.length > 0) {
+              current = Lucinda_util.getCol(current,key);
+              current = current.slice(1);
+              break;
+            }
+          }else {
+            if (!(Lucinda_util.isobject(current))) {
+              break;
+            }else {
+                return undefined;
+            }
+          }
+        }else {
+          current = current[key];
+        }
       }
-      current = current[key];
+      l_res[a_var] = current;
     }
-    return current;
+
+    let f_res = Lucinda_util.obj2matrix(l_res);
+
+    // let f_res_header = f_res[0];
+    // let f_res_body = f_res.slice(1);
+    // return [f_res_header,f_res_body];
+    return f_res;
   }
 
   /*sets a new <k> in <this.data> with a corresponding value <v>*/
@@ -334,7 +549,8 @@ class Lucinda_view {
     const regex = /([\w.]+)\s*(==|===|!=|!==|>=|=<|>|<)\s*([\w\d.]+)|\(|\)|&&|\|\|/g;
     let parsedExpression = s.replace(regex, (match, variable, operator, value) => {
       if (variable && operator && value) {
-        const var_value = lv_instance.get_nested_value(variable);
+        let var_value = lv_instance.get_nested_value(variable);
+        var_value = this.val_(var_value);
         const eval_opr = ___evaluate_opr(var_value, operator, value);
         return eval_opr;
       }
@@ -363,12 +579,15 @@ class Lucinda_view {
     }
   }
 
+  gen_dom_id(t){
+    return t +"_"+ document.getElementsByTagName(t).length + 1;
+  }
+
 
 
 
   /** VIEW FUNCTIONS
-  * each function takes only one @param:
-  * <args>: a list of keys that are inside <this.data>
+  * the data param has two parts 0:header, 1:body
   */
 
   /*Terminal function view*/
@@ -380,61 +599,162 @@ class Lucinda_view {
     }
   }
 
-  /*Returns just the text*/
-  val(...args){
+  /*Terminal function view*/
+  fun_(...args) {
     try {
-      return args.join(", ");
+      if (args[0].includes("(")) {
+        return args[0].split("(")[0];
+      }
+      return args[0];
+    } catch (e) {
+      return "";
+    }
+  }
+
+  data_(...args) {
+    try {
+      let d_val = eval('(' + args[0] + ')');
+      return d_val;
     } catch (e) {
       return "";
     }
   }
 
   /*Returns just the text*/
-  table(...args){
-    let htmltab = "";
+  val_(...args){
     try {
-      if (args.length > 0) {
-        if (typeof Array.isArray(args[0])){
-          const val = args[0];
-          htmltab += "<table>";
+      let data = Lucinda_util.lucinda_unformat(args[0]).getData();
 
-          if (args[1] != undefined) {
-            var val_row = args[1];
-            if (!(Array.isArray(val_row))){
-              val_row = [val_row];
-            }
-            htmltab += "<thead><tr>";
-            for (let j = 0; j < val_row.length; j++) {
-              htmltab += "<th>"+val_row[j]+"</th>";
-            }
-            htmltab += "</tr></thead>";
-          }
-
-          htmltab += "<tbody>";
-
-          for (let i = 0; i < val.length; i++) {
-            var val_row = val[i];
-            if (!(Array.isArray(val_row))){
-              val_row = [val_row];
-            }
-            htmltab += "<tr>";
-            for (let j = 0; j < val_row.length; j++) {
-              htmltab += "<td>"+val_row[j]+"</td>";
-            }
-            htmltab += "</tr>";
-          }
-          htmltab += "</tbody></table>";
-        }
+      if (data.length == 1) {
+        return data[0].join(" ");
       }
+
+      if (data.length > 1) {
+        let res = [];
+        for (let i = 0; i < data.length; i++) {
+          res.push(data[i].join(" "));
+        }
+        return res.join(" ");
+      }
+      return "";
     } catch (e) {
       return "";
     }
-    return htmltab;
+  }
+
+  /*Build link*/
+  alink(...args){
+    try {
+      let data = Lucinda_util.lucinda_unformat(args[0]).getData();
+      if (data.length > 0) {
+        let e = data[0][0];
+        let e_link = data[0][1];
+        return "<a href='"+e_link+"'>"+e+"</a>"
+      }
+      return "";
+    } catch (e) {
+      return "<span class='lucinda-view-err'>Error!</span>";
+    }
+  }
+
+  /*takes only one arg = data
+  and returns the length of the data*/
+  llength(...args){
+    let data = Lucinda_util.lucinda_unformat(args[0]).getData();
+    return data.length;
   }
 
   concat(...args){
     try {
       return args.join("");
+    } catch (e) {
+      return "";
+    }
+  }
+
+  /**/
+  styleHTML(...args){
+    try {
+      let html_content = args[0];
+      let html_style_f = args[1];
+      const parser = new DOMParser();
+      const html_obj = parser.parseFromString(html_content, 'text/html');
+      let new_html_obj = this[html_style_f](html_obj);
+      return new_html_obj.body.innerHTML;
+    } catch (e) {
+      console.log(e);
+      return "<span class='lucinda-view-err'>Error!</span>";
+    }
+  }
+
+  itemlist(...args){
+
+      let dataList = Lucinda_util.matrix2obj(args[0]);
+
+      let row_id = args[1]
+      let keyList = args[2];
+
+      let maxRowsPerPage = 20;
+      if (args.length > 3) {
+        if (args[2]) {
+          maxRowsPerPage = args[3];
+        }
+      }
+
+      let addheader = false;
+      if (args.length > 4) {
+        if (args[3]) {
+          addheader = args[4];
+        }
+      }
+
+      let style_display = "";
+
+      if (args.length > 5) {
+        if (args[5]) {
+          const sort = args[5];
+          dataList = Lucinda_util.sort_by_key(dataList, sort[0], sort[1], sort[2]);
+        }
+      }
+
+      const table_container_id = this.gen_dom_id("itemlist");
+      let html = `<div class="itemlist-container" id="${table_container_id}">`;
+      for (const item of dataList) {
+        let data_att = [];
+        let html_tds = "";
+        for (const key of keyList) {
+          data_att.push(`data-${key}="${item[key]}"`);
+          html_tds += `<div class="itemlist-att" data-att="${key}" style="${style_display}" > ${item[key] !== undefined ? `<div class="itemlist-att-title">${key}:</div>`+item[key] : ''}</div>`;
+        }
+
+        html += `<div class="itemlist-item" id="${item[row_id]}" ${data_att.join(" ")} >${html_tds}</div>`;
+      }
+      html += '</div>';
+
+      return html;
+  }
+
+  /*args[0] Lucinda data frame*/
+  /*args[1] Lucinda function*/
+  /*args[2] Lucinda data = <string> */
+  doforeach(...args){
+    try {
+
+      let res = [];
+
+      let header = Lucinda_util.lucinda_unformat(args[0]).getHeader();
+      let data = Lucinda_util.lucinda_unformat(args[0]).getData();
+      let lv_fun = args[1];
+      let splitter = args[2];
+
+      for (let i = 0; i < data.length; i++) {
+        let values = [header]
+        values.push(data[i]);
+        let htmlrow = this[lv_fun](values);
+        res.push(htmlrow);
+      }
+
+      return res.join(splitter);
     } catch (e) {
       return "";
     }
@@ -501,7 +821,7 @@ class Lucinda {
     static current_resource = [];
     static data = {};
     static extdata = {};
-    static lv = null;
+    static lv = new Lucinda_view( {} );
 
     static init(_conf) {
       for (const _k in _conf) {
@@ -654,6 +974,9 @@ class Lucinda {
 
         function __template_found(_pa) {
           Lucinda.current_resource = _pa;
+          // add the main params to Lucinda.data
+          Lucinda.data["main"] = {};
+          Object.assign(Lucinda.data.main, _pa.param);
           return _do_queries();
         }
 
@@ -723,11 +1046,16 @@ class Lucinda {
           .then(data => {
             if(Lucinda.conf.verbose){console.log('data retrieved from endpoint:', data);}
             const fun_success_controller = req_conf.success_controller;
-            let resource_normal = Lucinda[fun_success_controller](data);
-            if (resource_normal == null) {
+            let res_normal = Lucinda[fun_success_controller](data);
+
+            if (res_normal == null) {
               Lucinda.build_error_html_page();
             }else {
-              Lucinda.data[cr_query_block.id] = Lucinda.postprocess(resource_normal, cr_query_block);
+              Lucinda.data[cr_query_block.id] = res_normal;
+              if(res_normal.length > 0){
+                  Lucinda.data[cr_query_block.id] = Lucinda.postprocess(res_normal, cr_query_block);
+              }
+
               // when all pending queries are done build the HTML page
               if (Object.values(Lucinda.data).every(value => value !== undefined)) {
                 Lucinda.build_success_html_page();
@@ -803,38 +1131,37 @@ class Lucinda {
 
       const [_, functionName, args] = match;
       if (typeof window[functionName] !== 'function') {
-          throw new Error(`Postprocess function not found: ${functionName}`);
+        throw new Error(`Postprocess function not found: ${functionName}`);
       }
 
       // Process the arguments using `param` for mapping
-      const keys = args
+      const wanted_keys = args
         .split(',')
         .map(arg => arg.trim())
         .filter(arg => arg !== "");
 
-      const values = keys.map(key => {
-        const value = data[key];
-        if (value === undefined) return key;
-        return Array.isArray(value) ? value[0] : value;
+      const header = data[0];
+
+      // Map each key to its index in the header or -1 if not found
+      const indices = wanted_keys.map(key => {
+        const idx = header.indexOf(key);
+        return idx !== -1 ? idx : null;
       });
 
-      var newValues = window[functionName](...values);
+      // Build new rows with correct values or nulls for missing columns
+      // slice the header
+      const filtered_rows = data.slice(1).map(row =>
+        indices.map(i => (i !== null ? row[i] : null))
+      );
+      let values = [wanted_keys, ...filtered_rows];
+      var post_data = window[functionName]( values );
+      let new_data = Lucinda_util.merge_data(
+        data,
+        post_data
+      );
 
-      let newValues_obj = {};
-      if (Array.isArray(newValues) && newValues != null) {
-
-        for (let i = 0; i < keys.length; i++) {
-          newValues_obj[keys[i]] = newValues[i];
-        }
-
-        for (const k in data) {
-          if (k in newValues_obj) {
-            data[k] = newValues_obj[k];
-          }
-        }
-      }
-
-      return data;
+      console.log(new_data);
+      return new_data;
     }
 
     static build_success_html_page(){
@@ -845,7 +1172,8 @@ class Lucinda {
       fetch(Lucinda.conf.templates_url+template+`.html?rand=${Math.random()}`)
           .then(response => response.text())
           .then(html_content => {
-            const fields = Lucinda_util.extract_lucinda_placeholders(html_content);
+            const fields = Lucinda_util.extract_lucinda_placeholders(html_content,Lucinda.lv);
+
             // apply Lucinda view
             var html_index  = {};
             if (fields) {
@@ -854,11 +1182,12 @@ class Lucinda {
                 const param = fields[placeholder]["param"];
                 const params_not_ready = Lucinda.lv.is_ready(fun,param);
 
+
                 if (params_not_ready.length == 0) {
                   html_index[placeholder] = Lucinda.lv.genval(fun,param);
                 }else {
                   const uniqueid = Lucinda_util.create_unique_id(placeholder);
-                  html_index[placeholder] = "<span class='lucinda-pendinghtml:"+uniqueid+" loading-dots'><span>.</span><span>.</span><span>.</span> </span>";
+                  html_index[placeholder] = "<span class='lucinda-pendinghtml-"+uniqueid+" loading-dots'><span>.</span><span>.</span><span>.</span> </span>";
                   Lucinda.lv.set_new_pending_html_entry( placeholder , params_not_ready );
                 }
               }
@@ -873,26 +1202,24 @@ class Lucinda {
     }
 
     static build_extdata_view(...args){
-      var id = args[0];
-      id = Array.isArray(id) ? id : [id];
 
-      const value = args[1];
-      for (let i = 0; i < id.length; i++) {
-        Lucinda.extdata[id[i]] = value;
-        Lucinda.lv.set_new_data_entry(id[i],value);
-      }
+      var extdata_id = args[2];
+      const data = args[3];
+
+      Lucinda.lv.set_new_data_entry(extdata_id,data);
 
       const html_ready_placeholders = Lucinda.lv.check_pending_html();
 
       for (let i = 0; i < html_ready_placeholders.length; i++) {
-        const fields = Lucinda_util.extract_lucinda_placeholders(html_ready_placeholders[i]);
+        const fields = Lucinda_util.extract_lucinda_placeholders(html_ready_placeholders[i],Lucinda.lv);
         for (const placeholder in fields) {
           const fun = fields[placeholder]["fun"];
           const param = fields[placeholder]["param"];
           const view = Lucinda.lv.genval(fun,param);
 
           const uniqueid = Lucinda_util.create_unique_id(placeholder);
-          const loading_placeholder = document.getElementsByClassName('lucinda-pendinghtml:'+uniqueid);
+          //const loading_placeholder = document.getElementsByClassName('lucinda-pendinghtml-'+uniqueid);
+          const loading_placeholder = document.querySelectorAll(`.lucinda-pendinghtml-${uniqueid}`);
           for (const element of loading_placeholder) {
             element.innerHTML = view;
             element.className = 'lucinda-pendinghtml-loaded';
@@ -907,20 +1234,18 @@ class Lucinda {
       if ("extdata" in main_block) {
         var ext_data = main_block["extdata"];
         ext_data = Array.isArray(ext_data) ? ext_data : [ext_data];
-
         for (let i = 0; i < ext_data.length; i++) {
           var [field_id, ext_fun] = ext_data[i].split(":");
           field_id = main_block["id"]+"."+field_id;
-          //if (field_id in Lucinda.extdata) {
-          const call_extfun = _extfun(field_id, ext_fun);
-          //}
+          // call the
+          _call_extfun(field_id, ext_fun);
         }
       }
 
-      function _extfun(field_id, data_extfun) {
-        const match = data_extfun.match(/^(\w+)\((.*?)\)$/);
+      function _call_extfun(field_id, ext_fun) {
+        const match = ext_fun.match(/^(\w+)\((.*?)\)$/);
         if (!match) {
-          throw new Error(`Invalid external function call syntax: ${data_extfun}`);
+          throw new Error(`Invalid external function call syntax: ${ext_fun}`);
         }
 
         const [_, functionName, args] = match;
@@ -928,8 +1253,28 @@ class Lucinda {
             throw new Error(`Postprocess function not found: ${functionName}`);
         }
 
+        // Process the arguments using `param` for mapping
+        const wanted_keys = args
+          .split(',')
+          .map(arg => arg.trim())
+          .filter(arg => arg !== "");
+
+        const header = wanted_keys;
+        let fres = [];
+        fres.push(header);
+
+        let _ext_args = {};
+        let l_args = args.split(",");
+        for (const _k in Lucinda.data[main_block["id"]]) {
+          const main_att = _k.trim();
+          let arg_val = Lucinda.data[main_block["id"]][main_att];
+          if ((arg_val != undefined) && (arg_val != null))  {
+            _ext_args[main_att] = arg_val;
+          }
+        }
+
         // Call the function with field_id
-        return window[functionName](field_id);
+        return window[functionName](fres,_ext_args,field_id);
 
       }
     }
@@ -970,28 +1315,11 @@ class Lucinda {
     }
 
     static reqhandler_spqrqljson(data){
-        if (data.results.bindings.length > 0) {
-          // Initialize resource_normal object with empty values for each variable in head.vars
-          const resource_normal = data.head.vars.reduce((acc, varName) => {
-              acc[varName] = null;
-              return acc;
-          }, {});
-
-          // Loop through bindings and update resource_normal with actual values where available
-          data.results.bindings.forEach((binding) => {
-              Object.keys(binding).forEach((key) => {
-                  if (resource_normal[key] == null) {
-                    resource_normal[key] = [];
-                  }
-                  if (binding[key].value !== undefined) {
-                      resource_normal[key].push( binding[key].value ); // Assign the value if exists
-                  }
-              });
-          });
-
-          return resource_normal;
-      }
-      return null;
+      return Lucinda_util.arrObj2matrix(
+        data.head.vars,
+        data.results.bindings,
+        "value"
+      );
     }
 
 
