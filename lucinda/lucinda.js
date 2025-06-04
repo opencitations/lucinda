@@ -380,9 +380,12 @@ class Lucinda_view {
     // > Can take only one argument
     // > Have only arguments ready (already with values)
     this.terminal_fun = [
-      "htmlcontent_",
-      "fun_",
-      "data_"
+      "_HTML_",
+      "_DATA_"
+    ];
+
+    this.datamap_fun = [
+      "mapData"
     ];
 
     this.command_fun = [
@@ -535,7 +538,11 @@ class Lucinda_view {
       }
     }
     let val = this[view_fun](...att_vals);
-    if (!(this.terminal_fun.includes(view_fun))) {
+    if (
+      (!(this.terminal_fun.includes(view_fun)))
+      &&
+      (!(this.datamap_fun.includes(view_fun)))
+    ) {
       return "<span class='lucinda-"+view_fun+"'>"+val+"</span>";
     }
     return val;
@@ -582,6 +589,28 @@ class Lucinda_view {
     return t +"_"+ document.getElementsByTagName(t).length + 1;
   }
 
+  return_data(data,header=null) {
+    let res = Lucinda_util.lucinda_format( data, header );
+    return {
+      "header": Lucinda_util.lucinda_unformat(res).getHeader(),
+      "data": Lucinda_util.lucinda_unformat(res).getData()
+    }
+  }
+
+  call_view_function(_f, args, header=null){
+
+    let arg = Lucinda_util.lucinda_format( args, header );
+
+    let res = this[_f](
+      {
+        "header": Lucinda_util.lucinda_unformat(arg).getHeader(),
+        "data": Lucinda_util.lucinda_unformat(arg).getData()
+      }
+    );
+
+    return this.return_view_function(res);
+  }
+
 
 
 
@@ -590,7 +619,7 @@ class Lucinda_view {
   */
 
   /*Terminal function view*/
-  htmlcontent_(...args){
+  _HTML_(...args){
     try {
       return args.join("");
     } catch (e) {
@@ -598,19 +627,7 @@ class Lucinda_view {
     }
   }
 
-  /*Terminal function view*/
-  fun_(...args) {
-    try {
-      if (args[0].includes("(")) {
-        return args[0].split("(")[0];
-      }
-      return args[0];
-    } catch (e) {
-      return "";
-    }
-  }
-
-  data_(...args) {
+  _DATA_(...args) {
     try {
       let d_val = eval('(' + args[0] + ')');
       return d_val;
@@ -661,6 +678,36 @@ class Lucinda_view {
   llength(...args){
     let data = Lucinda_util.lucinda_unformat(args[0]).getData();
     return data.length;
+  }
+
+  mapData(...args){
+    let header = Lucinda_util.lucinda_unformat(args[0]).getHeader();
+    let data = Lucinda_util.lucinda_unformat(args[0]).getData();
+
+    const columnFunctions = args[1].split(';').map(item => item.trim());
+
+    const mapped_data = [];
+
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      const mapped_row = [];
+
+      for (let j = 0; j < row.length; j++) {
+        const funcName = columnFunctions[j];
+        const cell = row[j];
+
+        if (!funcName || typeof this[funcName] !== 'function') {
+          mapped_row.push(cell);
+        } else {
+
+          mapped_row.push( this[funcName]( cell ) );
+        }
+      }
+      mapped_data.push(mapped_row);
+    }
+    mapped_data.unshift(header);
+
+    return mapped_data;
   }
 
   concat(...args){

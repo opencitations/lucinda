@@ -10,19 +10,18 @@
 ### Arguments
 Lucinda handles three types of variables, to be used in the HTML page:
 - **Lucinda data frame**: defined as `<HF_BLOCK_ID>.<ATTRIBUTE>`, e.g. `docdata.title`
-- **Lucinda function**: defined as `fun_(<FUNCTION_NAME>)`, e.g. `fun_(viewtitle)`
-- **Lucinda data**: defined as `data_(<JS_DATA>)`, e.g. `data_(["a","b"])`
-- **Lucinda html content**: defined as `htmlcontent_(<HTML_CONTENT>)`, e.g. `htmlcontent_(<p>Hi!</p>)`
+- **Lucinda data**: defined as `_DATA_(<JS_DATA>)`, e.g. `_DATA_(["a","b"])`
+- **Lucinda html content**: defined as `_HTML_(<HTML_CONTENT>)`, e.g. `_HTML_(<p>Hi!</p>)`
 
 ### Example :
 ```
-[[ Lucinda:htmlcontent(<h1>This is the title</h1>) ]]
+[[ Lucinda:_HTML_(<h1>This is the title</h1>) ]]
 ```
 
 ### Example (nested view):
 ```
 [[Lucinda:concat(
-  htmlcontent(<i>Publisher retrieved via Api is :</i>),
+  _HTML_(<i>Publisher retrieved via Api is :</i>),
   main.addinfo
 )]]
 ```
@@ -30,10 +29,10 @@ Lucinda handles three types of variables, to be used in the HTML page:
 
 ## Registered View Functions
 
-#### htmlcontent()
+#### \_HTML\_()
 Takes a random number of string arguments, variable values are not supported.
 - **Returns:** an HTML string (if different arguments are given the values are concatanated)
-- **Example:** `[[Lucinda:htmlcontent(<h1>My new website is<i>The best web site</i></h1>)]]`
+- **Example:** `[[Lucinda:_HTML_(<h1>My new website is<i>The best web site</i></h1>)]]`
 
 #### val()
 Takes a random number of variables as arguments.
@@ -51,9 +50,9 @@ Takes a random number of arguments and concat them.
 - **Example:**
 ```
 [[Lucinda:concat(
-    htmlcontent(<h2>The authors of this BR are: <h2>),
+    _HTML_(<h2>The authors of this BR are: <h2>),
     table(meta.author),
-    htmlcontent(<br>)
+    _HTML_(<br>)
 )]]
 ```
 
