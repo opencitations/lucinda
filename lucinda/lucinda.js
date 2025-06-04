@@ -380,7 +380,7 @@ class Lucinda_view {
     // > Can take only one argument
     // > Have only arguments ready (already with values)
     this.terminal_fun = [
-      "htmlcontent",
+      "htmlcontent_",
       "fun_",
       "data_"
     ];
@@ -460,7 +460,6 @@ class Lucinda_view {
     }
 
     let f_res = Lucinda_util.obj2matrix(l_res);
-
     // let f_res_header = f_res[0];
     // let f_res_body = f_res.slice(1);
     // return [f_res_header,f_res_body];
@@ -591,7 +590,7 @@ class Lucinda_view {
   */
 
   /*Terminal function view*/
-  htmlcontent(...args){
+  htmlcontent_(...args){
     try {
       return args.join("");
     } catch (e) {

@@ -3,11 +3,16 @@
 ## View functions
 - A view function can be called from the resource HTML template following this syntax:
 ```[[Lucinda:<view_method>(<view_arg{0}>,<view_arg{1}>...)]]```
-- The argument of a view function (`<view_arg>`) can be:
-  - a value/result from one of the HF blocks (`<block_name>.<var_name>`), e.g. `meta.title`;
-  - an external data (`<block_0_name>.<extvar_name>`) e.g. `main.addinfo`
-  - another `<view_method>`, which makes it a nested Lucinda view function.
+- View functions could be nested
 - New view functions could be defined in the JS addon file, following [the corresponding guidelines](man_jsaddon.md)
+
+
+### Arguments
+Lucinda handles three types of variables, to be used in the HTML page:
+- **Lucinda data frame**: defined as `<HF_BLOCK_ID>.<ATTRIBUTE>`, e.g. `docdata.title`
+- **Lucinda function**: defined as `fun_(<FUNCTION_NAME>)`, e.g. `fun_(viewtitle)`
+- **Lucinda data**: defined as `data_(<JS_DATA>)`, e.g. `data_(["a","b"])`
+- **Lucinda html content**: defined as `htmlcontent_(<HTML_CONTENT>)`, e.g. `htmlcontent_(<p>Hi!</p>)`
 
 ### Example :
 ```
