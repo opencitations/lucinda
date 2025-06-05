@@ -1,0 +1,20 @@
+<html>
+  <head>
+    <style>
+        h1 {
+            text-align: left;
+        }
+    </style>
+  </head>
+  <body>
+    <h1> This is a BR (Journal) </h1>
+
+    <p>ID: <a href="/this/is/a/link/to/[[Lucinda:val(meta.id)]]">[[Lucinda:val(meta.id)]]</a></p>
+    <p>Title: [[Lucinda:val(meta.title)]]</p>
+
+    <p>Title with custom Lucinda_view function: [[Lucinda:capitalizetext(meta.title)]]</p>
+
+    <p>Also I have adde a new value using a postprocess function: <b>[[Lucinda:val(meta.postprocess_value)]]</b> <p>
+
+  </body>
+</html>

@@ -1,0 +1,106 @@
+<html>
+  <head>
+    <style></style>
+
+  </head>
+  <body>
+
+    <p class="lucinda-template-header"> This is the lucinda template for any BR in OpenCitations </p>
+    <br><br>
+
+    <div class="container-fluid p-4">
+
+      <div class="row">
+        <div id="br_main" class="col-12 col-md-8 d-flex flex-column flex-md-row">
+
+          <div class="card shadow-sm p-4 m-2">
+            <div class="card-body">
+
+            <h1>
+              [[Lucinda:ifcond(
+                author_meta.name !== null,
+                val(author_meta.name),
+                htmlcontent(<span style="color:orange">This author has no name</span>)
+              )]]
+            </h1>
+
+            <h3>
+            [[Lucinda:ifcond(
+              author_meta.orcid !== null,
+              val(author_meta.orcid),
+              htmlcontent(<span style="color:orange"></span>)
+            )]]
+            </h3>
+
+            </div>
+          </div>
+
+        </div>
+
+
+        <div id="metrics" class="col col-md-4 d-grid gap-0 row-gap-3 d-flex flex-column flex-md-row">
+
+          <div class="card shadow-sm p-1 m-2">
+            <div class="card-body">
+
+                <div class="row g-3 column-gap-3">
+                  <!--<h3 class="">#Citations</h3>-->
+                  <div class="col reference-count">
+                    <div class="card shadow-sm p-1 m-1">
+                        <div class="card-body">
+                          <h4>Documents</h4>
+                          <h3 style="color: var(--refs-color)">[[Lucinda:llength(author_works.id)]]</h3>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="row">
+        <div id="works" class="col">
+          <div class="row p-1">
+              <!--<h3>Document citations</h3>-->
+
+              <div class="col mt-3">
+                <div class="card shadow-sm">
+                  <div class="card-body">
+
+                      <h4>Works <i>(<span style="color: var(--refs-color)">[[Lucinda:llength(author_works.id)]]</span> documents)</i></h4>
+
+                      <!-- Array of Objects -->
+                      <!-- Attribute used as ID for each entry -->
+                      <!-- Attributes to consider -->
+                      <!-- sort entities according to an Attribute: ["<Attribute>",<Attribute-Type>, true|false (ascending)] -->
+                      [[Lucinda:
+                        styleHTML(
+                          itemlist(
+                              author_works.id; author_works.title; author_works.author; author_works.pub_date,
+                              d("author_works.id"),
+                              d(["author_works.title","author_works.author","author_works.pub_date","author_works.id"]),
+                              d(false),
+                              d(["author_works.title","string",true])
+                          ),
+                          f(doc_entry)
+                        )
+                      ]]
+
+                  </div>
+                </div>
+              </div>
+
+
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+  </body>
+</html>

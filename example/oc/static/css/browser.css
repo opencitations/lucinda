@@ -1,0 +1,152 @@
+:root{
+  --cits-color: #4985f3;
+  --refs-color: #fa790d;
+}
+
+
+/* Header Styling */
+header {
+  /*background-color: lightgray;*/
+  background: linear-gradient(to top, lightgray, lightgray);
+  color: white;
+  padding: 0em;
+  font-family: sans-serif;
+}
+
+header .logo {
+  align-items: center;
+  display: inline-flex;
+}
+
+header .logo img {
+  height: 150px;
+  margin-left: 2em;
+}
+
+header nav {
+  display: inline-flex;
+  position: absolute;
+  right: 0;
+  margin-right: 50px;
+}
+
+header nav ul {
+  display: flex;
+  gap: 1.5em;
+  justify-content: flex-start;
+  list-style: none;
+}
+
+header nav ul li a {
+  font-weight: bold;
+  transition: color 0.3s ease;
+}
+
+header nav ul li a:hover {
+  color: white;
+}
+
+/* Footer Styling */
+footer {
+  border-top: solid lightgray;
+  background-color: unset;
+  color: black;
+  margin: 1em 10em;
+  text-align: center;
+}
+
+footer p {
+  margin: 1em 0;
+}
+
+footer nav ul {
+  display: flex;
+  gap: 1.5em;
+  justify-content: center;
+  margin-bottom: 1em;
+}
+
+footer nav ul li a {
+  color: #ccc;
+  font-weight: bold;
+  transition: color 0.3s ease;
+}
+
+footer nav ul li a:hover {
+  color: #FFD700;
+}
+
+.social-media {
+  display: flex;
+  justify-content: center;
+  gap: 1em;
+}
+
+.social-media a {
+  color: white;
+  font-size: 1.2em;
+  transition: transform 0.3s ease;
+}
+
+.social-media a:hover {
+  transform: scale(1.2);
+}
+
+/*Customize Lucinda*/
+#__lucinda__ {
+  min-height: 500px;
+  padding: 5px;
+}
+
+#citaions_and_references table {
+  font-family: sans-serif !important;
+  border-collapse: separate !important;
+  border-spacing: 10px !important;
+  border: solid 0.5px gray;
+  border-radius: 5px !important;
+}
+
+#citaions_and_references table th{
+  font-family: sans-serif !important;
+  background: white !important;
+  border: none !important;
+}
+
+a {
+  color: black!important;
+  text-decoration: none!important;
+  position: relative!important;
+  display: inline-block!important;
+  background-image: linear-gradient(180deg, rgba(154, 49, 252, 0.5) 0%, transparent 100%)!important;
+  background-repeat: no-repeat!important;
+  background-size: 100% 0.25em!important;
+  background-position: 0 101%!important;
+  transition: background-size 0.3s ease, background-position 0.5s ease, background-image 0.3s ease!important;
+}
+
+a:hover {
+  background-size: 0% 0%!important;
+  background-position: 0 100%!important;
+  background-image: linear-gradient(0deg, rgba(154, 49, 252, 0.2) 0%, transparent 100%)!important;
+}
+
+a.anyid-doi{}
+
+
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  header nav ul {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5em;
+  }
+
+  footer nav ul {
+    flex-direction: column;
+    gap: 0.5em;
+  }
+
+  .social-media {
+    flex-direction: column;
+  }
